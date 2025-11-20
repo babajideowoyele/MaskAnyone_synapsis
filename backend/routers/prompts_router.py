@@ -33,9 +33,13 @@ def fetch_pose_prompts(video_id: str, frame_index: int, token_payload: dict = De
         source=frame,
         device='cpu',
     )
-
-    poses = results[0].keypoints.xy.cpu().numpy().astype(int)
-    confs = results[0].keypoints.conf.cpu().numpy()
+    
+    try:
+        poses = results[0].keypoints.xy.cpu().numpy().astype(int)
+        confs = results[0].keypoints.conf.cpu().numpy()
+    except Exception as e:
+        print("prompts_router - No poses detected:", e)
+        return {'pose_prompts': []}
 
     poses = np.array([[point if conf > 0.8 else (0, 0)
                        for point, conf in zip(keypoints, confidences)]
@@ -83,7 +87,7 @@ def test(sam2_params: Sam2Params, video_id: str, frame_index: int, token_payload
         'pose_prompts': json.dumps(sam2_params.pose_prompts),
     }
 
-    print(data)
+    print("it is this", data)
 
     # Send the image along with the JSON data in a multipart request
     response = requests.post(

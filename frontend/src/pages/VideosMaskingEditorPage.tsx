@@ -52,12 +52,18 @@ const VideoMaskingEditorPage = () => {
             setPosePrompts((resultVideoJob.data as any)['videoMasking']['posePrompts'][0]);
             setOverlayStrategories((resultVideoJob.data as any)['videoMasking']['overlayStrategies']);
             setHidingStrategies((resultVideoJob.data as any)['videoMasking']['hidingStrategies'] || []);
-        } else {
+        } else { // checking
             Api.fetchPosePrompt(videoId, currentFrame).then(posePrompts => {
-                setPosePrompts(posePrompts);
-                setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
-                setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
-            });
+                if(posePrompts.length !== 0) {
+                    console.log('loaded pose prompts for this frame:', posePrompts);
+                    setPosePrompts(posePrompts);
+                    setOverlayStrategories(posePrompts.map((_: any) => 'mp_pose'));
+                    setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
+                }
+                else {console.log('no pose prompts for this frame');}
+            }).catch(() => {
+                console.log('caught error.')
+                })
         }
     }, [videoId, resultVideoId, Boolean(resultVideoJob)]);
 

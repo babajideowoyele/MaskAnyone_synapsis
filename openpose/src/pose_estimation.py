@@ -1,7 +1,7 @@
 import cv2
 import sys
 import os
-
+import tqdm
 sys.path.append('/workspace/openpose/build/python')
 from openpose import pyopenpose as op
 
@@ -17,7 +17,7 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
     
     op_wrapper = initialize_open_pose(params)
     pose_data = []
-
+    progress = tqdm.tqdm(total=int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT)), desc="Estimating pose with OpenPose", unit="frame")
     idx = 0
     while video_capture.isOpened():
         ret, frame = video_capture.read()
@@ -48,6 +48,7 @@ def perform_openpose_pose_estimation(input_path: str, options: dict):
             pose_data.append(None)
 
         idx += 1
+        progress.update(1)
 
     video_capture.release()
     return pose_data
