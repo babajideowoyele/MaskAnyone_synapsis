@@ -73,6 +73,8 @@ Possible overlay strategies are: `mp_hand, mp_face, mp_pose, openpose, openpose_
 
 The results will be stored in `/data/backend/results`. Note that you have to clear the results folder before masking again, otherwise it will not mask any video.
 
+Note: You may need to uncomment the CLI section in `docker/worker/Dockerfile`
+
 ### Debugging
 Run the application with 
 ```bash
