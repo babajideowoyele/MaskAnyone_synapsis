@@ -249,3 +249,41 @@ ALTER TABLE ONLY public.workers
 -- PostgreSQL database dump complete
 --
 
+--
+-- Performance Indexes (added for query optimization)
+--
+
+-- Jobs table indexes
+-- Critical: status is queried every 5 seconds by workers polling for next job
+CREATE INDEX idx_jobs_status ON public.jobs(status);
+-- User queries for their jobs list
+CREATE INDEX idx_jobs_user_id ON public.jobs(user_id);
+-- Lookup by video_id
+CREATE INDEX idx_jobs_video_id ON public.jobs(video_id);
+-- Composite index for user's jobs ordered by creation time
+CREATE INDEX idx_jobs_user_created ON public.jobs(user_id, created_at DESC);
+
+-- Videos table indexes
+-- User queries for their video list
+CREATE INDEX idx_videos_user_id ON public.videos(user_id);
+-- Composite index for user's videos by status
+CREATE INDEX idx_videos_user_status ON public.videos(user_id, status);
+
+-- Result videos table indexes
+-- Lookup by source video
+CREATE INDEX idx_result_videos_video_id ON public.result_videos(video_id);
+-- Lookup by job
+CREATE INDEX idx_result_videos_job_id ON public.result_videos(job_id);
+
+-- Result tables indexes (for lookups by result_video_id)
+CREATE INDEX idx_result_mp_kinematics_result_video_id ON public.result_mp_kinematics(result_video_id);
+CREATE INDEX idx_result_blendshapes_result_video_id ON public.result_blendshapes(result_video_id);
+CREATE INDEX idx_result_audio_files_result_video_id ON public.result_audio_files(result_video_id);
+CREATE INDEX idx_result_extra_files_result_video_id ON public.result_extra_files(result_video_id);
+
+-- Presets table index
+CREATE INDEX idx_presets_user_id ON public.presets(user_id);
+
+-- Workers table index
+CREATE INDEX idx_workers_job_id ON public.workers(job_id);
+

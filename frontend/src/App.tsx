@@ -19,6 +19,8 @@ import Selector from "./state/selector";
 import LandingPageLayout from "./layout/LandingPageLayout";
 import Api from "./api";
 import VideoMaskingEditorPage from "./pages/VideosMaskingEditorPage";
+import CarbonDemoPage from "./pages/CarbonDemoPage";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const initializeKeycloak = () => {
     KeycloakAuth.initialize().then(loggedIn => {
@@ -80,35 +82,40 @@ const App = () => {
     }
 
     if (!user) {
-        return (<>
-            <CssBaseline />
-            <Routes>
-                <Route path={'/'} element={<LandingPageLayout />}>
-                    <Route path={Paths.about} element={<AboutPage />} />
-                    <Route index={true} element={<LandingPage />} />
-                </Route>
-            </Routes>
-        </>);
+        return (
+            <ErrorBoundary>
+                <CssBaseline />
+                <Routes>
+                    <Route path={'/'} element={<LandingPageLayout />}>
+                        <Route path={Paths.about} element={<AboutPage />} />
+                        <Route index={true} element={<LandingPage />} />
+                    </Route>
+                </Routes>
+            </ErrorBoundary>
+        );
     }
 
-    return (<>
-        <CssBaseline />
-        <Routes>
-            <Route path={'/'} element={<PageLayout />}>
-                <Route path={Paths.videos} element={<VideosPage />} />
-                <Route path={Paths.videoDetails} element={<VideosPage />} />
-                <Route path={Paths.videoRunMasking} element={<VideosMaskingPage />} />
-                <Route path={Paths.videoMaskingEditor} element={<VideoMaskingEditorPage />} />
-                <Route path={Paths.videoResultMaskingEditor} element={<VideoMaskingEditorPage />} />
-                <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
-                <Route path={Paths.runs} element={<RunsPage />} />
-                <Route path={Paths.presets} element={<PresetsPage />} />
-                <Route path={Paths.workers} element={<WorkersPage />} />
-                <Route path={Paths.about} element={<AboutPage />} />
-                <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
-            </Route>
-        </Routes>
-    </>);
+    return (
+        <ErrorBoundary>
+            <CssBaseline />
+            <Routes>
+                <Route path={'/'} element={<PageLayout />}>
+                    <Route path={Paths.videos} element={<VideosPage />} />
+                    <Route path={Paths.videoDetails} element={<VideosPage />} />
+                    <Route path={Paths.videoRunMasking} element={<VideosMaskingPage />} />
+                    <Route path={Paths.videoMaskingEditor} element={<VideoMaskingEditorPage />} />
+                    <Route path={Paths.videoResultMaskingEditor} element={<VideoMaskingEditorPage />} />
+                    <Route path={Paths.resultVideoDetails} element={<VideosPage />} />
+                    <Route path={Paths.runs} element={<RunsPage />} />
+                    <Route path={Paths.presets} element={<PresetsPage />} />
+                    <Route path={Paths.workers} element={<WorkersPage />} />
+                    <Route path={Paths.about} element={<AboutPage />} />
+                    <Route path="/demo" element={<CarbonDemoPage />} />
+                    <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
+                </Route>
+            </Routes>
+        </ErrorBoundary>
+    );
 };
 
 export default App;
