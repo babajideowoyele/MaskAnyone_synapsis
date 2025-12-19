@@ -38,8 +38,12 @@ def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer(
 
 
 @router.get("/{result_video_id}/blendshapes")
-def get_blendshapes(result_video_id: str):
-    # @todo auth
+def get_blendshapes(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    # Verify user has access to this result
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
 
     try:
         result_blendshapes = (
@@ -54,8 +58,12 @@ def get_blendshapes(result_video_id: str):
 
 
 @router.get("/{result_video_id}/mp-kinematics")
-def get_mp_kinematics(result_video_id: str):
-    # @todo auth
+def get_mp_kinematics(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    # Verify user has access to this result
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
 
     try:
         result_mp_kinematics = (
@@ -69,8 +77,12 @@ def get_mp_kinematics(result_video_id: str):
         return None
 
 @router.get("/{result_video_id}/mp-kinematics/csv")
-async def get_mp_kinematics_csv(result_video_id: str):
-    # @todo auth
+async def get_mp_kinematics_csv(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    user_id = token_payload["sub"]
+
+    # Verify user has access to this result
+    result_video = result_video_manager.get_result_video(result_video_id)
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
 
     try:
         result_mp_kinematics = (

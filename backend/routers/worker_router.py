@@ -3,9 +3,10 @@ import uuid
 import cv2
 import json
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 
 from models import RunParams, MpKinematicsType, ResultDataType, UpdateJobProgressParams, RegisterWorkerParams
+from auth.worker_auth import verify_worker_api_key
 from db.job_manager import JobManager
 from db.worker_manager import WorkerManager
 from db.video_manager import VideoManager
@@ -18,6 +19,7 @@ from db.db_connection import DBConnection
 from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
 from utils.request_utils import range_requests_response
 from utils.video_utils import extract_video_info_from_capture
+from utils.validators import validate_video_id, validate_result_video_id, validate_job_id
 
 db_connection = DBConnection()
 video_manager = VideoManager(db_connection)
@@ -31,6 +33,7 @@ worker_manager = WorkerManager(db_connection)
 
 router = APIRouter(
     prefix="/_worker/{worker_id}",
+    dependencies=[Depends(verify_worker_api_key)],
 )
 
 
@@ -56,16 +59,17 @@ def fetch_next_job(worker_id: str):
     return {"job": job}
 
 
-@router.post("/jobs/create/{job_type}")
-def create_job(job_type: str, run_params: RunParams):
-    job_manager.create_new_jobs(
-        run_params.id,
-        run_params.video_ids,
-        run_params.result_video_id,
-        run_params.run_data,
-        job_type,
-        'dc2de8bb-60cd-4bf7-9574-d237a30bf96d' # @todo use reference job user id here
-    )
+# SECURITY: This endpoint has been disabled due to hardcoded user_id security bypass.
+# The endpoint allowed job creation under an arbitrary hardcoded user account.
+# If this functionality is needed in the future, implement proper user context:
+# 1. Accept a reference_job_id parameter
+# 2. Look up the user_id from the reference job in the database
+# 3. Use that user_id for the new job
+#
+# @router.post("/jobs/create/{job_type}")
+# def create_job(job_type: str, run_params: RunParams):
+#     # TODO: Implement proper user context before re-enabling
+#     pass
 
 
 @router.post("/jobs/{job_id}/progress")
@@ -88,6 +92,8 @@ def fail_job(worker_id: str, job_id: str):
 
 @router.get("/videos/{video_id}")
 def get_video_stream(worker_id: str, video_id: str, request: Request):
+    # Validate UUID to prevent path traversal attacks
+    video_id = validate_video_id(video_id)
     video_path = os.path.join(VIDEOS_BASE_PATH, video_id + ".mp4")
 
     return range_requests_response(
@@ -102,8 +108,13 @@ def get_job_status(worker_id: str, job_id: str):
 
 @router.get("/results/video/{job_id}")
 def get_result_video_stream(worker_id: str, job_id: str, request: Request):
+    # Validate UUID to prevent path traversal attacks
+    job_id = validate_job_id(job_id)
     result_video_id = job_manager.get_result_video_id(job_id)
     video_id = job_manager.get_video_id(job_id)
+    # result_video_id and video_id come from database, but validate anyway
+    result_video_id = validate_result_video_id(result_video_id)
+    video_id = validate_video_id(video_id)
     video_path = os.path.join(RESULT_BASE_PATH, video_id, result_video_id + ".mp4")
 
     return range_requests_response(
@@ -115,6 +126,10 @@ def get_result_video_stream(worker_id: str, job_id: str, request: Request):
 async def upload_result_video(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
+    # Validate UUIDs to prevent path traversal attacks
+    video_id = validate_video_id(video_id)
+    result_video_id = validate_result_video_id(result_video_id)
+
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
@@ -142,6 +157,10 @@ async def upload_result_video(
 async def upload_result_video_preview_image(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
+    # Validate UUIDs to prevent path traversal attacks
+    video_id = validate_video_id(video_id)
+    result_video_id = validate_result_video_id(result_video_id)
+
     result_dir = os.path.join(RESULT_BASE_PATH, video_id)
     if not os.path.exists(result_dir):
         os.mkdir(result_dir)
@@ -163,6 +182,10 @@ async def upload_result_mp_kinematics(
     type: MpKinematicsType,
     request: Request,
 ):
+    # Validate UUIDs to prevent path traversal attacks
+    video_id = validate_video_id(video_id)
+    result_video_id = validate_result_video_id(result_video_id)
+
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_mp_kinematics_manager.create_result_mp_kinematics_entry(
@@ -177,6 +200,10 @@ async def upload_result_data(
     data_type: ResultDataType,
     request: Request,
 ):
+    # Validate UUIDs to prevent path traversal attacks
+    video_id = validate_video_id(video_id)
+    result_video_id = validate_result_video_id(result_video_id)
+
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
     result_extra_files_manager.create_result_extra_files_entry(
