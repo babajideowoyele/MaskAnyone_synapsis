@@ -26,4 +26,11 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 RUN wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11x-pose.pt -O /worker_models/yolo11x-pose.pt
 ####################
 
+# Create non-root user for security
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \
+    && chown -R appuser:appuser /app /worker_models
+
+USER appuser
+
 WORKDIR /app

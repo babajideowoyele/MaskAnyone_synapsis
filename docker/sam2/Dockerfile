@@ -51,4 +51,11 @@ COPY ./sam2_patched_misc.py /workspace/sam2/sam2/utils/misc.py
 
 ENV PYTHONPATH=/workspace/sam2:$PYTHONPATH
 
+# Create non-root user for security
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \
+    && chown -R appuser:appuser /app /workspace
+
+USER appuser
+
 WORKDIR /app

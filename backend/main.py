@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.responses import JSONResponse
 
 import routers.jobs_router as jobs_router
 import routers.videos_router as videos_router
@@ -11,6 +12,13 @@ import routers.platform_router as platform_router
 from auth.jwt_bearer import JWTBearer
 
 app = FastAPI()
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker healthchecks and load balancers."""
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
+
 
 # /platform
 app.include_router(platform_router.router)

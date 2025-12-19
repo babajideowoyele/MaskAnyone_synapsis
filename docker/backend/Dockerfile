@@ -17,4 +17,11 @@ RUN mkdir /backend_models \
     && wget https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11m-pose.pt \
         -O /backend_models/yolo11m-pose.pt
 
+# Create non-root user for security
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \
+    && chown -R appuser:appuser /app /backend_models
+
+USER appuser
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

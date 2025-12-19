@@ -1,0 +1,79 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+docs/
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+!.env.example
+app.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Build outputs
+dist/
+build/
+*.egg
+*.whl
+
+# Data directories (mounted as volumes)
+data/
+
+# Test files
+tests/
+test/
+*_test.py
+test_*.py
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# SSL/Keys (security)
+*.key
+*.pem
+*.p12
+*.pfx
+ssl/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp

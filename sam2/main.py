@@ -9,9 +9,16 @@ import gc
 import time
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, HTTPException, Response
+from fastapi.responses import JSONResponse
 from src.segmentation import perform_sam2_segmentation
 
 app = FastAPI()
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker healthchecks and load balancers."""
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
 
 router = APIRouter(
     prefix="/sam2",

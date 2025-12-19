@@ -71,4 +71,11 @@ ENV PATH /workspace/openpose/build/examples/openpose:$PATH
 
 RUN pip install fastapi uvicorn[standard] python-multipart
 
+# Create non-root user for security
+RUN groupadd --gid 1000 appuser \
+    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \
+    && chown -R appuser:appuser /app /workspace
+
+USER appuser
+
 WORKDIR /app

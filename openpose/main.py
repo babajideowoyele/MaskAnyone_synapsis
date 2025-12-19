@@ -5,10 +5,17 @@ import pickle
 import json
 
 from fastapi import FastAPI, APIRouter, File, Form, UploadFile, Response
+from fastapi.responses import JSONResponse
 from src.pose_estimation import perform_openpose_pose_estimation
 
 
 app = FastAPI()
+
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker healthchecks and load balancers."""
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
 
 router = APIRouter(
     prefix="/openpose",
