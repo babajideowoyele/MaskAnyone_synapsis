@@ -1,9 +1,17 @@
+"""
+Worker router - internal endpoints for processing workers.
+
+All endpoints require worker API key authentication via X-Worker-API-Key header.
+In local mode, authentication is bypassed for development.
+"""
 import os
 import uuid
+import logging
 import cv2
 import json
+from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException, status
 
 from models import RunParams, MpKinematicsType, ResultDataType, UpdateJobProgressParams, RegisterWorkerParams
 from db.job_manager import JobManager
@@ -15,9 +23,12 @@ from db.result_blendshapes_manager import ResultBlendshapesManager
 from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
-from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH
+from config import RESULT_BASE_PATH, VIDEOS_BASE_PATH, MAX_UPLOAD_SIZE_BYTES
+from auth.worker_auth import verify_worker_api_key
 from utils.request_utils import range_requests_response
 from utils.video_utils import extract_video_info_from_capture
+
+logger = logging.getLogger(__name__)
 
 db_connection = DBConnection()
 video_manager = VideoManager(db_connection)
@@ -31,6 +42,7 @@ worker_manager = WorkerManager(db_connection)
 
 router = APIRouter(
     prefix="/_worker/{worker_id}",
+    dependencies=[Depends(verify_worker_api_key)]  # All routes require worker auth
 )
 
 
@@ -111,21 +123,57 @@ def get_result_video_stream(worker_id: str, job_id: str, request: Request):
     )
 
 
+def _validate_path_component(component: str, name: str) -> str:
+    """Validate that a path component doesn't contain path traversal attempts."""
+    if not component or '..' in component or '/' in component or '\\' in component:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid {name}"
+        )
+    return component
+
+
 @router.post("/videos/{video_id}/results/{result_video_id}")
 async def upload_result_video(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
-    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
+    """Upload a result video from a worker."""
+    # Validate path components to prevent path traversal
+    _validate_path_component(video_id, "video_id")
+    _validate_path_component(result_video_id, "result_video_id")
 
-    video_path = os.path.join(result_dir, result_video_id + ".mp4")
+    # Check content length
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"
+        )
 
+    result_dir = Path(RESULT_BASE_PATH) / video_id
+    result_dir.mkdir(parents=True, exist_ok=True)
+
+    video_path = result_dir / f"{result_video_id}.mp4"
+
+    # Use context manager for safe file handling
     video_content = await request.body()
 
-    file = open(video_path, "wb")
-    file.write(video_content)
-    file.close()
+    # Double-check size after receiving body
+    if len(video_content) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"
+        )
+
+    try:
+        with open(video_path, "wb") as f:
+            f.write(video_content)
+    except IOError as e:
+        logger.error(f"Failed to write result video: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save result video"
+        )
 
     job = job_manager.fetch_job_by_result_video_id(result_video_id)
 
@@ -142,17 +190,34 @@ async def upload_result_video(
 async def upload_result_video_preview_image(
     worker_id: str, video_id: str, result_video_id: str, request: Request
 ):
-    result_dir = os.path.join(RESULT_BASE_PATH, video_id)
-    if not os.path.exists(result_dir):
-        os.mkdir(result_dir)
+    """Upload a preview image for a result video."""
+    # Validate path components
+    _validate_path_component(video_id, "video_id")
+    _validate_path_component(result_video_id, "result_video_id")
 
-    image_path = os.path.join(result_dir, result_video_id + ".png")
+    result_dir = Path(RESULT_BASE_PATH) / video_id
+    result_dir.mkdir(parents=True, exist_ok=True)
+
+    image_path = result_dir / f"{result_video_id}.png"
 
     image_content = await request.body()
 
-    file = open(image_path, "wb")
-    file.write(image_content)
-    file.close()
+    # Limit preview image size to 50MB
+    if len(image_content) > 50 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Preview image too large"
+        )
+
+    try:
+        with open(image_path, "wb") as f:
+            f.write(image_content)
+    except IOError as e:
+        logger.error(f"Failed to write preview image: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save preview image"
+        )
 
 
 @router.post("/videos/{video_id}/results/{result_video_id}/mp_kinematics/{type}")

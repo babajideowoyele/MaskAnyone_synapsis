@@ -1,6 +1,15 @@
-import os
+"""
+Results router - endpoints for accessing masking results and extracted data.
 
-from fastapi import APIRouter, Depends
+All endpoints require authentication and verify user ownership.
+"""
+import os
+import logging
+from io import StringIO
+import csv
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from db.job_manager import JobManager
 from db.db_connection import DBConnection
@@ -10,6 +19,8 @@ from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from auth.jwt_bearer import JWTBearer
 from config import RESULT_BASE_PATH
+
+logger = logging.getLogger(__name__)
 
 db_connection = DBConnection()
 job_manager = JobManager(db_connection)
@@ -21,6 +32,22 @@ result_video_manager = ResultVideoManager(db_connection)
 router = APIRouter(
     prefix="/results",
 )
+
+
+def _verify_user_owns_result(result_video_id: str, user_id: str):
+    """
+    Verify that the user owns the result video.
+
+    Raises:
+        HTTPException: 404 if result not found, 403 if user doesn't own it
+    """
+    result_video = result_video_manager.get_result_video(result_video_id)
+    if not result_video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Result not found"
+        )
+    video_manager.assert_user_has_video(result_video.video_id, user_id)
 
 
 @router.post("/{result_video_id}/delete")
@@ -38,8 +65,10 @@ def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer(
 
 
 @router.get("/{result_video_id}/blendshapes")
-def get_blendshapes(result_video_id: str):
-    # @todo auth
+def get_blendshapes(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """Get facial blendshape data for a result video."""
+    user_id = token_payload["sub"]
+    _verify_user_owns_result(result_video_id, user_id)
 
     try:
         result_blendshapes = (
@@ -47,15 +76,27 @@ def get_blendshapes(result_video_id: str):
                 result_video_id
             )
         )
-
+        if not result_blendshapes:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Blendshapes data not found for this result"
+            )
         return result_blendshapes.data
+    except HTTPException:
+        raise
     except Exception as error:
-        return None
+        logger.error(f"Error fetching blendshapes for {result_video_id}: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch blendshapes data"
+        )
 
 
 @router.get("/{result_video_id}/mp-kinematics")
-def get_mp_kinematics(result_video_id: str):
-    # @todo auth
+def get_mp_kinematics(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """Get MediaPipe kinematics data for a result video."""
+    user_id = token_payload["sub"]
+    _verify_user_owns_result(result_video_id, user_id)
 
     try:
         result_mp_kinematics = (
@@ -63,14 +104,27 @@ def get_mp_kinematics(result_video_id: str):
                 result_video_id
             )
         )
-
+        if not result_mp_kinematics:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Kinematics data not found for this result"
+            )
         return result_mp_kinematics.data
+    except HTTPException:
+        raise
     except Exception as error:
-        return None
+        logger.error(f"Error fetching mp-kinematics for {result_video_id}: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch kinematics data"
+        )
+
 
 @router.get("/{result_video_id}/mp-kinematics/csv")
-async def get_mp_kinematics_csv(result_video_id: str):
-    # @todo auth
+async def get_mp_kinematics_csv(result_video_id: str, token_payload: dict = Depends(JWTBearer())):
+    """Get MediaPipe kinematics data as CSV for a result video."""
+    user_id = token_payload["sub"]
+    _verify_user_owns_result(result_video_id, user_id)
 
     try:
         result_mp_kinematics = (
@@ -113,6 +167,16 @@ async def get_mp_kinematics_csv(result_video_id: str):
             buffer.seek(0)
             yield buffer.getvalue()
 
-        return StreamingResponse(iterfile(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=kinematics_data.csv"})
+        return StreamingResponse(
+            iterfile(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=kinematics_{result_video_id}.csv"}
+        )
+    except HTTPException:
+        raise
     except Exception as error:
-        return None
+        logger.error(f"Error generating CSV for {result_video_id}: {error}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate CSV export"
+        )
