@@ -1,5 +1,9 @@
-import psycopg2
+import logging
 import os
+
+import psycopg2
+
+logger = logging.getLogger(__name__)
 
 
 class DBConnection:
@@ -12,7 +16,9 @@ class DBConnection:
             port=os.environ["BACKEND_PG_PORT"],
         )
 
-    def execute(self, sql: str, bindings: dict = {}):
+    def execute(self, sql: str, bindings: dict | None = None):
+        if bindings is None:
+            bindings = {}
         cursor = self.__connection.cursor()
 
         try:
@@ -20,11 +26,14 @@ class DBConnection:
             self.__connection.commit()
         except psycopg2.Error as e:
             self.__connection.rollback()
-            raise e
+            logger.error(f"Database execute error: {e}")
+            raise
         finally:
             cursor.close()
 
-    def select_all(self, sql: str, bindings: dict = {}):
+    def select_all(self, sql: str, bindings: dict | None = None) -> list:
+        if bindings is None:
+            bindings = {}
         cursor = self.__connection.cursor()
 
         try:
@@ -33,7 +42,8 @@ class DBConnection:
             return result
         except psycopg2.Error as e:
             self.__connection.rollback()
-            raise e
+            logger.error(f"Database select error: {e}")
+            raise
         finally:
             cursor.close()
 

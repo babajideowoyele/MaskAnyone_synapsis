@@ -1,24 +1,26 @@
+import json
+import logging
 import uuid
+
+from fastapi import HTTPException
+
 from db.db_connection import DBConnection
 from db.model.job import Job
-import json
+
+logger = logging.getLogger(__name__)
 
 
 class JobManager:
     def __init__(self, db_connection: DBConnection):
         self.__db_connection = db_connection
 
-    def fetch_jobs(self, user_id: str):
-        result = []
-
+    def fetch_jobs(self, user_id: str) -> list[Job]:
         job_data_list = self.__db_connection.select_all(
-            "SELECT * FROM jobs WHERE user_id=%(user_id)s ORDER BY created_at DESC", {"user_id": user_id}
+            "SELECT * FROM jobs WHERE user_id=%(user_id)s ORDER BY created_at DESC",
+            {"user_id": user_id},
         )
 
-        for job_data in job_data_list:
-            result.append(Job(*job_data))
-
-        return result
+        return [Job(*job_data) for job_data in job_data_list]
 
     def create_new_jobs(
         self,
@@ -28,12 +30,9 @@ class JobManager:
         data: dict,
         job_type: str,
         user_id: str,
-    ):
+    ) -> None:
         for idx, video_id in enumerate(video_ids):
-            if idx == 0:
-                job_id = id
-            else:
-                job_id = str(uuid.uuid4())
+            job_id = id if idx == 0 else str(uuid.uuid4())
             self.__db_connection.execute(
                 "INSERT INTO jobs (id, video_id, result_video_id, type, status, data, created_at, user_id) VALUES (%(id)s, %(video_id)s, %(result_video_id)s, %(type)s, %(status)s, %(data)s, current_timestamp, %(user_id)s)",
                 {
@@ -47,8 +46,7 @@ class JobManager:
                 },
             )
 
-    def fetch_next_job(self):
-        # @todo make this nice
+    def fetch_next_job(self) -> Job | None:
         cursor = self.__db_connection.get_cursor()
         jobs = []
 
@@ -67,9 +65,10 @@ class JobManager:
                 )
 
             cursor.execute("COMMIT")
-        except Exception as error:
+        except Exception:
             cursor.execute("ROLLBACK")
-            raise error
+            logger.exception("Error fetching next job")
+            raise
         finally:
             cursor.close()
 
@@ -82,66 +81,56 @@ class JobManager:
         )
 
         if len(job_data_list) < 1:
-            raise Exception("Could not find job for result video " + result_video_id)
+            raise HTTPException(
+                status_code=404,
+                detail=f"No job found for result video {result_video_id}",
+            )
 
         return Job(*job_data_list[0])
 
-    def update_job_progress(self, job_id: str, progress: int):
+    def update_job_progress(self, job_id: str, progress: int) -> None:
         self.__db_connection.execute(
             "UPDATE jobs SET progress=%(progress)s WHERE id=%(id)s",
             {"progress": progress, "id": job_id},
         )
 
-    def mark_job_as_finished(self, job_id: str):
+    def mark_job_as_finished(self, job_id: str) -> None:
         self.__db_connection.execute(
             "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
             {"status": "finished", "id": job_id},
         )
 
-    def mark_job_as_failed(self, job_id: str):
+    def mark_job_as_failed(self, job_id: str) -> None:
         self.__db_connection.execute(
             "UPDATE jobs SET status=%(status)s, finished_at=current_timestamp, progress=100 WHERE id=%(id)s",
             {"status": "failed", "id": job_id},
         )
 
-    def get_job_status(self, job_id: str):
-        return self._get_job(job_id).status
+    def get_job_status(self, job_id: str) -> str:
+        return self.get_job(job_id).status
 
-    def get_job(self, job_id: str):
+    def get_job(self, job_id: str) -> Job:
         job_data_list = self.__db_connection.select_all(
             "SELECT * FROM jobs WHERE id=%(id)s",
             {"id": job_id},
         )
 
         if len(job_data_list) < 1:
-            raise Exception("Could not find job for result video " + job_id)
+            raise HTTPException(
+                status_code=404,
+                detail=f"Job {job_id} not found",
+            )
 
         return Job(*job_data_list[0])
 
-    def delete_job(self, job_id: str):
+    def delete_job(self, job_id: str) -> None:
         self.__db_connection.execute(
             "DELETE FROM jobs WHERE id=%(id)s",
             {"id": job_id},
         )
 
-    def get_result_video_id(self, job_id: str):
-        job_data_list = self.__db_connection.select_all(
-            "SELECT * FROM jobs WHERE id=%(id)s",
-            {"id": job_id},
-        )
+    def get_result_video_id(self, job_id: str) -> str:
+        return self.get_job(job_id).result_video_id
 
-        if len(job_data_list) < 1:
-            raise Exception("Could not find job for result video " + job_id)
-
-        return Job(*job_data_list[0]).result_video_id
-
-    def get_video_id(self, job_id: str):
-        job_data_list = self.__db_connection.select_all(
-            "SELECT * FROM jobs WHERE id=%(id)s",
-            {"id": job_id},
-        )
-
-        if len(job_data_list) < 1:
-            raise Exception("Could not find job for result video " + job_id)
-
-        return Job(*job_data_list[0]).video_id
+    def get_video_id(self, job_id: str) -> str:
+        return self.get_job(job_id).video_id
