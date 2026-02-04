@@ -11,22 +11,55 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import { visuallyHidden } from '@mui/utils';
-import {Chip, IconButton, Link as MuiLink} from '@mui/material';
+import {Chip, IconButton, keyframes, LinearProgress, Link as MuiLink, Tooltip} from '@mui/material';
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import {Job} from "../state/types/Job";
 import {Link} from "react-router-dom";
 import Paths from "../paths";
-import JobProgress from "../components/runs/JobProgress";
 import DeleteIcon from '@mui/icons-material/Delete';
 import DeleteJobDialog from "../components/runs/DeleteJobDialog";
 import Command from "../state/actions/command";
 
-const statusColors: { [status: string] : "info"|"success"|"error" } = {
+const statusColors: { [status: string]: "default"|"info"|"success"|"error"|"warning" } = {
+    'open': 'default',
     'running': 'info',
     'finished': 'success',
     'failed': 'error',
-}
+};
+
+const jobTypeLabels: Record<string, string> = {
+    'basic_masking': 'Basic Masking',
+    'sam2_masking': 'SAM2 Masking',
+};
+
+const formatDuration = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+};
+
+const getElapsedMs = (job: Job): number | null => {
+    if (!job.startedAt) return null;
+    const end = job.finishedAt ?? new Date();
+    return end.getTime() - job.startedAt.getTime();
+};
+
+const getEstimatedRemainingMs = (job: Job): number | null => {
+    if (job.status !== 'running' || !job.startedAt || job.progress <= 0) return null;
+    const elapsed = new Date().getTime() - job.startedAt.getTime();
+    const totalEstimated = elapsed / (job.progress / 100);
+    return Math.max(0, totalEstimated - elapsed);
+};
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
@@ -54,7 +87,7 @@ function getComparator<Key extends keyof any>(
 
 interface HeadCell {
   disablePadding: boolean;
-  id: keyof Job | 'actions';
+  id: keyof Job | 'actions' | 'duration';
   label: string;
   sortable?: boolean;
 }
@@ -81,19 +114,7 @@ const headCells: readonly HeadCell[] = [
   {
     id: 'createdAt',
     disablePadding: false,
-    label: 'Created At',
-    sortable: true,
-  },
-  {
-    id: 'startedAt',
-    disablePadding: false,
-    label: 'Started At',
-    sortable: true,
-  },
-  {
-    id: 'finishedAt',
-    disablePadding: false,
-    label: 'Finished At',
+    label: 'Created',
     sortable: true,
   },
   {
@@ -103,9 +124,14 @@ const headCells: readonly HeadCell[] = [
     sortable: true,
   },
   {
+    id: 'duration',
+    disablePadding: false,
+    label: 'Duration / ETA',
+  },
+  {
     id: 'actions',
     disablePadding: false,
-    label: 'Actions',
+    label: '',
   }
 ];
 
@@ -117,8 +143,7 @@ interface EnhancedTableProps {
 }
 
 function EnhancedTableHead(props: EnhancedTableProps) {
-  const { order, orderBy, rowCount, onRequestSort } =
-    props;
+  const { order, orderBy, onRequestSort } = props;
   const createSortHandler =
     (property: keyof Job) => (event: React.MouseEvent<unknown>) => {
       onRequestSort(event, property);
@@ -157,6 +182,128 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
+const JobDurationCell = ({ job }: { job: Job }) => {
+    const [, setTick] = React.useState(0);
+
+    React.useEffect(() => {
+        if (job.status !== 'running') return;
+        const interval = setInterval(() => setTick(t => t + 1), 1000);
+        return () => clearInterval(interval);
+    }, [job.status]);
+
+    const elapsed = getElapsedMs(job);
+    const remaining = getEstimatedRemainingMs(job);
+
+    if (job.status === 'open') {
+        return (
+            <Typography variant="body2" color="text.secondary">
+                Queued
+            </Typography>
+        );
+    }
+
+    return (
+        <Box component="div">
+            {elapsed !== null && (
+                <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem' }}>
+                    {formatDuration(elapsed)}
+                </Typography>
+            )}
+            {remaining !== null && job.status === 'running' && (
+                <Typography variant="caption" color="text.secondary">
+                    ~{formatDuration(remaining)} remaining
+                </Typography>
+            )}
+            {job.status === 'finished' && job.startedAt && job.finishedAt && (
+                <Typography variant="caption" color="text.secondary">
+                    Completed
+                </Typography>
+            )}
+            {job.status === 'failed' && (
+                <Typography variant="caption" color="error">
+                    Failed
+                </Typography>
+            )}
+        </Box>
+    );
+};
+
+const pulse = keyframes`
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+`;
+
+const getProgressPhase = (progress: number, status: string): { label: string; color: string } => {
+    if (status === 'finished') return { label: 'Done', color: 'success.main' };
+    if (status === 'failed') return { label: 'Failed', color: 'error.main' };
+    if (status === 'open') return { label: 'Queued', color: 'text.secondary' };
+    if (progress <= 5) return { label: 'Loading', color: 'info.main' };
+    if (progress <= 30) return { label: 'Segmenting', color: 'warning.main' };
+    if (progress <= 45) return { label: 'Processing', color: 'info.main' };
+    if (progress <= 55) return { label: 'Pose estimation', color: 'info.main' };
+    return { label: 'Rendering', color: 'success.main' };
+};
+
+const JobProgressCell = ({ job }: { job: Job }) => {
+    if (job.status === 'open') {
+        return (
+            <Tooltip title="Waiting for available worker">
+                <Box component="div" sx={{ minWidth: 160 }}>
+                    <LinearProgress variant="indeterminate" sx={{ height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Queued
+                    </Typography>
+                </Box>
+            </Tooltip>
+        );
+    }
+
+    const phase = getProgressPhase(job.progress, job.status);
+    const isSegmenting = job.status === 'running' && job.progress > 5 && job.progress <= 30;
+
+    return (
+        <Box component="div" sx={{ minWidth: 160 }}>
+            <Box component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <LinearProgress
+                    variant="determinate"
+                    value={job.progress}
+                    sx={{
+                        flex: 1,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        '& .MuiLinearProgress-bar': {
+                            borderRadius: 3,
+                            transition: 'transform 0.8s ease',
+                        },
+                    }}
+                />
+                <Typography
+                    variant="body2"
+                    sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem', minWidth: 40, textAlign: 'right' }}
+                >
+                    {Math.round(job.progress)}%
+                </Typography>
+            </Box>
+            {job.status === 'running' && (
+                <Typography
+                    variant="caption"
+                    sx={{
+                        mt: 0.5,
+                        display: 'block',
+                        color: phase.color,
+                        fontFamily: '"IBM Plex Mono", monospace',
+                        fontSize: '0.6875rem',
+                        animation: isSegmenting ? `${pulse} 2s ease-in-out infinite` : 'none',
+                    }}
+                >
+                    {phase.label}...
+                </Typography>
+            )}
+        </Box>
+    );
+};
+
 const RunsPage = () => {
   const dispatch = useDispatch();
   const jobs = useSelector(Selector.Job.jobList);
@@ -193,11 +340,9 @@ const RunsPage = () => {
     page > 0 ? Math.max(0, (1 + page) * rowsPerPage - jobs.length) : 0;
 
   const visibleRows = React.useMemo(
-      // @ts-ignore
-    () => jobs.slice().sort(getComparator(order, orderBy)).slice(
-        page * rowsPerPage,
-        page * rowsPerPage + rowsPerPage,
-    ),
+    () => [...jobs]
+        .sort(getComparator(order, orderBy) as unknown as (a: Job, b: Job) => number)
+        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [order, orderBy, page, rowsPerPage, jobs],
   );
 
@@ -225,8 +370,7 @@ const RunsPage = () => {
               rowCount={jobs.length}
             />
             <TableBody>
-              {visibleRows.map((row, index) => {
-
+              {visibleRows.map((row) => {
                 return (
                   <TableRow
                     hover
@@ -235,23 +379,30 @@ const RunsPage = () => {
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>
-                      <Chip label={row.status} color={statusColors[row.status]} />
+                      <Chip label={row.status} color={statusColors[row.status]} size="small" />
                     </TableCell>
                     <TableCell>
                       <MuiLink component={Link} to={Paths.makeVideoDetailsUrl(row.videoId)}>
-                        {videos.find(video => video.id === row.videoId)?.name}
+                        {videos.find(video => video.id === row.videoId)?.name ?? row.videoId.slice(0, 8)}
                       </MuiLink>
                     </TableCell>
-                    <TableCell>{row.type}</TableCell>
-                    <TableCell>{row.createdAt.toLocaleString()}</TableCell>
-                    <TableCell>{row.startedAt?.toLocaleString()}</TableCell>
-                    <TableCell>{row.finishedAt?.toLocaleString()}</TableCell>
-                    <TableCell sx={{ paddingTop: 1, paddingBottom: 1 }}>
-                      <JobProgress value={row.progress} />
+                    <TableCell>
+                        {jobTypeLabels[row.type] ?? row.type}
                     </TableCell>
                     <TableCell>
-                      <IconButton color={'primary'} onClick={() => setJobToDelete(row.id)}>
-                        <DeleteIcon />
+                        <Tooltip title={row.createdAt.toLocaleString()}>
+                            <span>{row.createdAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </Tooltip>
+                    </TableCell>
+                    <TableCell sx={{ paddingTop: 1, paddingBottom: 1 }}>
+                      <JobProgressCell job={row} />
+                    </TableCell>
+                    <TableCell>
+                      <JobDurationCell job={row} />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton color={'primary'} size="small" onClick={() => setJobToDelete(row.id)}>
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -263,7 +414,16 @@ const RunsPage = () => {
                     height: (53) * emptyRows,
                   }}
                 >
-                  <TableCell colSpan={6} />
+                  <TableCell colSpan={7} />
+                </TableRow>
+              )}
+              {jobs.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            No masking runs yet. Start a run from the video detail page.
+                        </Typography>
+                    </TableCell>
                 </TableRow>
               )}
             </TableBody>
