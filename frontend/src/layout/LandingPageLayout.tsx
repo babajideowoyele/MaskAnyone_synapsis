@@ -11,7 +11,7 @@ const styles = {
     root: {
         width: '100%',
         height: '100%',
-        fontFamily: 'Roboto',
+        fontFamily: '"IBM Plex Sans", sans-serif',
     },
     content: (theme: any) => ({
         padding: 1,
@@ -19,7 +19,7 @@ const styles = {
         width: '100%',
         height: '100%',
         boxSizing: 'border-box',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#f4f4f4',
         [theme.breakpoints.up('sm')]: {
             padding: 2,
             paddingTop: '84px',

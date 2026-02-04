@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
-import { useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
 import { Box, Typography } from "@mui/material";
+import Paths from "../paths";
 import DoubleVideo from "../components/videos/DoubleVideo";
 import VideoResultsOverview from "../components/videos/VideoResultsOverview";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,7 +29,7 @@ const VideosPage = () => {
     }, [videoId, resultVideoId]);
 
     if (!videoId && videoList.length > 0) {
-        return null;
+        return <Navigate to={Paths.makeVideoDetailsUrl(videoList[0].id)} replace />;
     }
 
     return (
