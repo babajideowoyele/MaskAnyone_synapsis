@@ -11,6 +11,8 @@ import Command from "../state/actions/command";
 import {v4 as uuidv4} from "uuid";
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ImageSearchIcon from '@mui/icons-material/ImageSearch';
 import ShieldLogoIcon from "../components/common/ShieldLogoIcon";
 import { debounce } from 'lodash';
 import { ReduxState } from "../state/reducer";
@@ -283,7 +285,40 @@ const VideoMaskingEditorPage = () => {
         <Box component="div" sx={{ display: 'flex' }}>
             <Box component='div' sx={{ width: 320 }}>
                 <Button onClick={maskVideo} variant={'contained'} color={'secondary'} startIcon={<ShieldLogoIcon />}>Mask</Button>
-                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1, marginRight: 1 }}>Test Prompt</Button>
+                <Button onClick={segmentPrompt} variant={'contained'} color={'primary'} sx={{ marginLeft: 1 }}>Test Prompt</Button>
+
+                <Box component="div" sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                    <Button
+                        variant={'outlined'}
+                        onClick={() => {
+                            if (!videoId) return;
+                            Api.fetchPosePrompt(videoId, debouncedCurrentFrame).then(prompts => {
+                                setPosePrompts(prompts);
+                                setOverlayStrategories(prompts.map((_: any) => 'mp_pose'));
+                                setHidingStrategies(prompts.map((_: any) => 'solid_fill'));
+                            });
+                        }}
+                        startIcon={<PersonSearchIcon />}
+                        size="small"
+                    >
+                        Detect Poses
+                    </Button>
+                    <Button
+                        variant={'outlined'}
+                        onClick={() => {
+                            if (!videoId) return;
+                            Api.fetchObjectPrompts(videoId, debouncedCurrentFrame).then(prompts => {
+                                setPosePrompts(prev => [...prev, ...prompts]);
+                                setOverlayStrategories(prev => [...prev, ...prompts.map((_: any) => 'none')]);
+                                setHidingStrategies(prev => [...prev, ...prompts.map((_: any) => 'solid_fill')]);
+                            });
+                        }}
+                        startIcon={<ImageSearchIcon />}
+                        size="small"
+                    >
+                        Detect Objects
+                    </Button>
+                </Box>
 
                 <Divider sx={{ marginTop: 2 }} />
 
