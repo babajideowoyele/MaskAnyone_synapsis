@@ -50,10 +50,13 @@ class Sam2PoseMasker:
 
     def mask(self, video_masking_data: dict):
         start = time.time()
+        self._progress_callback(1)
 
         content = self._read_video_content()
+        self._progress_callback(5)
         raw_mask_content = self._sam2_client.segment_video(video_masking_data['posePrompts'], content)
         del content
+        self._progress_callback(30)
 
         sam2_masks_file = open(self._sam2_masks_path, "wb")
         sam2_masks_file.write(raw_mask_content)
@@ -61,6 +64,7 @@ class Sam2PoseMasker:
 
         masks = self._sam2_client.decode_mask_npz_content(raw_mask_content)
         del raw_mask_content
+        self._progress_callback(35)
 
         print("Elapsed time (sam2):", time.time() - start)
 
@@ -69,13 +73,16 @@ class Sam2PoseMasker:
 
         bounding_boxes = self._calculate_full_object_bounding_boxes(masks)
         estimation_input_bounding_boxes = self._calculate_estimation_input_bounding_boxes(bounding_boxes, frame_width, frame_height)
+        self._progress_callback(38)
 
         subvideo_output_dir = '/app/subvideos'
         sub_video_paths = self._create_sub_videos(video_capture, estimation_input_bounding_boxes, masks, subvideo_output_dir)
         video_capture.release()
+        self._progress_callback(45)
 
         pose_data_dict = self._compute_pose_data(video_masking_data, sub_video_paths, total_frames)
         self._pose_postprocessor.postprocess(pose_data_dict, video_masking_data['overlayStrategies'], total_frames, sample_rate, estimation_input_bounding_boxes)
+        self._progress_callback(55)
 
         shutil.rmtree(subvideo_output_dir)
 
@@ -142,6 +149,10 @@ class Sam2PoseMasker:
             output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
             video_writer.write(output_frame)
             idx += 1
+
+            if total_frames > 0:
+                render_progress = 55 + round((idx / total_frames) * 44)
+                self._progress_callback(min(render_progress, 99))
 
         video_capture.release()
         video_writer.release()
