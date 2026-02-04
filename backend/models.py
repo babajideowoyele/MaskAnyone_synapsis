@@ -59,3 +59,14 @@ class RegisterWorkerParams(BaseModel):
 class ResultDataType(str, Enum):
     sam2_masks = "sam2_masks"
     poses = "poses"
+
+
+class TrimVideoParams(BaseModel):
+    new_video_id: str
+    new_video_name: str
+    start_time: float
+    end_time: float
+
+
+class RenameVideoParams(BaseModel):
+    name: str

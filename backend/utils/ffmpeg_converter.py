@@ -22,6 +22,18 @@ class FFmpegConverter:
         self.run_command(command)
         self.replace_file(temp_output, input_video)
 
+    def trim_video(self, input_path: str, output_path: str, start_time: float, end_time: float):
+        command = [
+            self.ffmpeg_path, "-y",
+            "-ss", str(start_time),
+            "-to", str(end_time),
+            "-i", input_path,
+            "-c", "copy",
+            "-avoid_negative_ts", "make_zero",
+            output_path
+        ]
+        self.run_command(command)
+
     def convert_video_with_audio_in_place(self, input_video: str, audio_video: str):
         temp_output = f"{input_video}.temp.mp4"
         command = [
