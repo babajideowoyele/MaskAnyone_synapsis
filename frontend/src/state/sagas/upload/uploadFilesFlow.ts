@@ -1,4 +1,4 @@
-import {call, fork, put, select, take} from 'redux-saga/effects';
+import {call, fork, put, take} from 'redux-saga/effects';
 import {channel} from 'redux-saga';
 import {Action} from 'redux-actions';
 import Command from "../../actions/command";
@@ -24,8 +24,16 @@ const onStartFileUploadWatcher = function*() {
     }
 };
 
+const formatVideoName = (fileName: string): string => {
+    const nameWithoutExt = fileName.replace(/\.[^.]+$/, '');
+    const now = new Date();
+    const date = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // HH:MM
+    return `${nameWithoutExt} - ${date} ${time}`;
+};
+
 const onUploadVideo = function*(file: FileUpload) {
-    yield call(Api.requestVideoUpload, file.id, file.file.name);
+    yield call(Api.requestVideoUpload, file.id, formatVideoName(file.file.name));
 
     const fileContent: ArrayBuffer = yield call(readFileArrayBuffer, file.file);
     yield call(Api.uploadVideo, file.id, fileContent, percentage => {

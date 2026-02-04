@@ -151,6 +151,13 @@ const Api = {
             method: 'post',
         });
     },
+    renameVideo: async (videoId: string, name: string): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/rename`,
+            method: 'post',
+            data: { name },
+        });
+    },
     fetchWorkers: async (): Promise<ApiFetchWorkersResponse> => {
         const result = await sendApiRequest({
             url: 'workers',
@@ -213,7 +220,35 @@ const Api = {
         });
 
         return result.data;
-    }
+    },
+    trimVideo: async (videoId: string, newVideoId: string, newVideoName: string, startTime: number, endTime: number): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/trim`,
+            method: 'post',
+            data: {
+                new_video_id: newVideoId,
+                new_video_name: newVideoName,
+                start_time: startTime,
+                end_time: endTime,
+            },
+        });
+    },
+    fetchObjectPrompts: async (videoId: string, frameIndex: number): Promise<any> => {
+        const result = await sendApiRequest({
+            url: `prompts/${videoId}/frames/${frameIndex}/objects`,
+            method: 'get',
+        });
+
+        return result.data.object_prompts;
+    },
+    fetchSystemResources: async (): Promise<any> => {
+        const result = await sendApiRequest({
+            url: 'platform/resources',
+            method: 'get',
+        });
+
+        return result.data;
+    },
 };
 
 export default Api;
