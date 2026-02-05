@@ -16,7 +16,7 @@ const styles = {
         alignItems: 'center',
     },
     button: (theme: any) => ({
-        color: '#525252',
+        color: 'text.secondary',
         padding: '4px 0',
         justifyContent: 'flex-start',
         textTransform: 'none',
@@ -150,6 +150,7 @@ const SideBarItem = (props: SideBarItemProps) => {
                             checked={props.checked}
                             onClick={handleCheckboxClick}
                             onMouseDown={e => e.stopPropagation()}
+                            inputProps={{ 'aria-label': `Select ${props.title}` } as any}
                         />
                     </Box>
                 )}

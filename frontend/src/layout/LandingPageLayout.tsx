@@ -19,7 +19,7 @@ const styles = {
         width: '100%',
         height: '100%',
         boxSizing: 'border-box',
-        backgroundColor: '#f4f4f4',
+        backgroundColor: theme.palette.background.default,
         [theme.breakpoints.up('sm')]: {
             padding: 2,
             paddingTop: '84px',
@@ -54,7 +54,7 @@ const LandingPageLayout = () => {
 
     return (
         <Box component="div" sx={styles.root}>
-            <AppBar position={'fixed'} color={'primary'} sx={styles.appBar}>
+            <AppBar position={'fixed'} sx={{...styles.appBar, backgroundColor: '#161616'}}>
                 <Toolbar sx={styles.toolbar}>
                     <Button component={Link} to={'/'} sx={{ color: 'white', marginLeft: '-16px' }}>
                         <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} />

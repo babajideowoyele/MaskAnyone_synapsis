@@ -1,4 +1,4 @@
-import {Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, IconButton, List} from "@mui/material";
+import {Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, IconButton, List, Tooltip, useTheme} from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
@@ -16,6 +16,7 @@ import Api from "../api";
 
 const styles = {
     drawer: (theme: any) => ({
+        zIndex: 1100,  // Lower than AppBar (1300) so TopBar stays visible
         '& .MuiDrawer-paper': {
             width: 280,
             [theme.breakpoints.up('lg')]: {
@@ -49,6 +50,7 @@ const SideBar = (props: SideBarProps) => {
     const [selectedVideos, setSelectedVideos] = useState<string[]>([])
     const [anyChecked, setAnyChecked] = useState(false)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const theme = useTheme();
 
     const openUploadDialog = () => {
         dispatch(Event.Upload.uploadDialogOpened({}));
@@ -124,20 +126,33 @@ const SideBar = (props: SideBarProps) => {
             variant={props.isLargeScreen ? 'persistent' : 'temporary'}
             children={(
                 <Box component="div" sx={styles.container}>
-                    <Box component="div" style={{ display: anyChecked ? "flex" : "none", alignItems: 'center', justifyContent: 'space-between', borderBottom: "1px solid #e0e0e0" }}>
-                        <IconButton onClick={handleSelectCancel}>
-                            <ClearIcon />
-                        </IconButton>
-                        <IconButton onClick={handleMaskSelected} color="primary" disabled={selectedVideos.length === 0}>
-                            <ShieldIcon />
-                        </IconButton>
-                        <IconButton onClick={handleBulkDelete} color="error" disabled={selectedVideos.length === 0}>
-                            <DeleteIcon />
-                        </IconButton>
-                        <Checkbox
-                            checked={selectedVideos.length === videoList.length}
-                            onClick={handleSelectAll}
-                        />
+                    <Box component="div" style={{ display: anyChecked ? "flex" : "none", alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${theme.palette.divider}` }}>
+                        <Tooltip title="Cancel selection">
+                            <IconButton onClick={handleSelectCancel} aria-label="Cancel selection">
+                                <ClearIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Mask selected">
+                            <span>
+                                <IconButton onClick={handleMaskSelected} color="primary" disabled={selectedVideos.length === 0} aria-label="Mask selected videos">
+                                    <ShieldIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Delete selected">
+                            <span>
+                                <IconButton onClick={handleBulkDelete} color="error" disabled={selectedVideos.length === 0} aria-label="Delete selected videos">
+                                    <DeleteIcon />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Select all">
+                            <Checkbox
+                                checked={selectedVideos.length === videoList.length}
+                                onClick={handleSelectAll}
+                                inputProps={{ 'aria-label': 'Select all videos' } as any}
+                            />
+                        </Tooltip>
                     </Box>
                     <List sx={{ display: 'flex', flexDirection: 'column', flex: 1, paddingBottom: 1 }} disablePadding={true}>
                         {videoList.map(video => (

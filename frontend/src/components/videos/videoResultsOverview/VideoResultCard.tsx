@@ -30,7 +30,7 @@ const VideoResultCard = (props: VideoResultCardProps) => {
     return (
         <Card
             variant={'outlined'}
-            sx={{ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: '0 0 13px 0 #c8c8c8' }, '&.selected': { boxShadow: '0 0 13px 0 #777' } }}
+            sx={(theme) => ({ width: '250px', display: 'inline-block', marginRight: '16px', cursor: 'pointer', '&:hover': { boxShadow: `0 0 13px 0 ${theme.palette.action.focus}` }, '&.selected': { boxShadow: `0 0 13px 0 ${theme.palette.action.selected}` } })}
             className={props.selected ? 'selected' : undefined}
             onClick={props.onSelect}
         >

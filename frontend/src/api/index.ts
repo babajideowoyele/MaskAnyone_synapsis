@@ -233,6 +233,24 @@ const Api = {
             },
         });
     },
+    convertVideoFps: async (videoId: string, newVideoId: string, newVideoName: string, targetFps: number): Promise<void> => {
+        await sendApiRequest({
+            url: `videos/${videoId}/convert-fps`,
+            method: 'post',
+            data: {
+                new_video_id: newVideoId,
+                new_video_name: newVideoName,
+                target_fps: targetFps,
+            },
+        });
+    },
+    getConversionProgress: async (videoId: string): Promise<{progress: number; status: string}> => {
+        const result = await sendApiRequest({
+            url: `videos/${videoId}/conversion-progress`,
+            method: 'get',
+        });
+        return result.data;
+    },
     fetchObjectPrompts: async (videoId: string, frameIndex: number): Promise<any> => {
         const result = await sendApiRequest({
             url: `prompts/${videoId}/frames/${frameIndex}/objects`,

@@ -20,6 +20,7 @@ from models import (
     FinalizeVideoUploadParams,
     TrimVideoParams,
     RenameVideoParams,
+    ConvertFpsParams,
     MpKinematicsType,
 )
 from db.video_manager import VideoManager
@@ -265,6 +266,58 @@ def trim_video(video_id: str, params: TrimVideoParams, token_payload: dict = Dep
         video_manager.delete_video(params.new_video_id)
         logger.error(f"Failed to trim video: {e}")
         raise HTTPException(status_code=500, detail="Failed to trim video")
+
+
+@router.post("/{video_id}/convert-fps")
+def convert_video_fps(video_id: str, params: ConvertFpsParams, token_payload: dict = Depends(JWTBearer())):
+    """Convert video to a different frame rate (e.g., 60fps -> 30fps)."""
+    validate_resource_id(video_id)
+    validate_resource_id(params.new_video_id)
+    user_id = token_payload["sub"]
+    video_manager.assert_user_has_video(video_id, user_id)
+
+    source_video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
+    if not os.path.exists(source_video_path):
+        raise HTTPException(status_code=404, detail="Source video file not found")
+
+    if params.target_fps < 1 or params.target_fps > 120:
+        raise HTTPException(status_code=400, detail="Target FPS must be between 1 and 120")
+
+    if video_manager.has_video_with_name(params.new_video_name, user_id):
+        raise HTTPException(status_code=400, detail="A video with this name exists already")
+
+    video_manager.add_pending_video(params.new_video_id, params.new_video_name, user_id)
+
+    new_video_path = os.path.join(VIDEOS_BASE_PATH, f"{params.new_video_id}.mp4")
+
+    try:
+        ffmpeg_converter.convert_fps(source_video_path, new_video_path, params.target_fps)
+
+        if not VideoCompatibilityChecker.is_browser_compatible(new_video_path):
+            ffmpeg_converter.convert_video_in_place(new_video_path)
+
+        capture = cv2.VideoCapture(new_video_path)
+
+        frame_count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
+        preview_path = os.path.join(VIDEOS_BASE_PATH, f"{params.new_video_id}.jpg")
+        capture.set(cv2.CAP_PROP_POS_FRAMES, int(frame_count / 2))
+        _, frame = capture.read()
+        preview_image = aspect_preserving_resize_and_crop(frame, 80, 60)
+        cv2.imwrite(preview_path, preview_image)
+
+        video_info = extract_video_info_from_capture(new_video_path, capture)
+        capture.release()
+
+        video_manager.set_video_to_valid(params.new_video_id, video_info)
+
+        return {"video_id": params.new_video_id, "video_info": video_info}
+
+    except Exception as e:
+        if os.path.exists(new_video_path):
+            os.remove(new_video_path)
+        video_manager.delete_video(params.new_video_id)
+        logger.error(f"Failed to convert video FPS: {e}")
+        raise HTTPException(status_code=500, detail="Failed to convert video frame rate")
 
 
 @router.get("/{video_id}/results")

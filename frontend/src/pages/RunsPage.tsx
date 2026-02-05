@@ -182,7 +182,19 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
-const JobDurationCell = ({ job }: { job: Job }) => {
+interface VideoInfo {
+    frameCount: number;
+    fps: number;
+}
+
+const estimateProcessingMs = (videoInfo: VideoInfo | null): number | null => {
+    if (!videoInfo) return null;
+    // Same heuristic as VideoMetadataBar: ~3 frames/sec on mid-range GPU
+    const effectiveFrames = videoInfo.fps > 30 ? videoInfo.frameCount * (30 / videoInfo.fps) : videoInfo.frameCount;
+    return (effectiveFrames / 3) * 1000;
+};
+
+const JobDurationCell = ({ job, videoInfo }: { job: Job; videoInfo: VideoInfo | null }) => {
     const [, setTick] = React.useState(0);
 
     React.useEffect(() => {
@@ -193,37 +205,63 @@ const JobDurationCell = ({ job }: { job: Job }) => {
 
     const elapsed = getElapsedMs(job);
     const remaining = getEstimatedRemainingMs(job);
+    const initialEstimate = estimateProcessingMs(videoInfo);
 
     if (job.status === 'open') {
         return (
-            <Typography variant="body2" color="text.secondary">
-                Queued
-            </Typography>
+            <Box component="div" sx={{ minWidth: 100 }}>
+                <Typography variant="body2" color="text.secondary">
+                    Queued
+                </Typography>
+                {initialEstimate && (
+                    <Typography variant="caption" color="text.secondary">
+                        Est. ~{formatDuration(initialEstimate)}
+                    </Typography>
+                )}
+            </Box>
         );
     }
 
+    // For finished jobs, show how estimate compared to actual
+    const getAccuracyLabel = (): string | null => {
+        if (job.status !== 'finished' || !elapsed || !initialEstimate) return null;
+        const ratio = elapsed / initialEstimate;
+        // Use simple multipliers - cleaner than percentages
+        if (ratio <= 0.5) return `${(1 / ratio).toFixed(1)}x faster`;
+        if (ratio >= 2) return `${ratio.toFixed(1)}x longer`;
+        // Within 0.5x-2x range: don't clutter with minor deviations
+        return null;
+    };
+
+    const accuracyLabel = getAccuracyLabel();
+
     return (
-        <Box component="div">
+        <Box component="div" sx={{ minWidth: 100 }}>
             {elapsed !== null && (
                 <Typography variant="body2" sx={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '0.8125rem' }}>
                     {formatDuration(elapsed)}
                 </Typography>
             )}
-            {remaining !== null && job.status === 'running' && (
-                <Typography variant="caption" color="text.secondary">
-                    ~{formatDuration(remaining)} remaining
-                </Typography>
-            )}
-            {job.status === 'finished' && job.startedAt && job.finishedAt && (
-                <Typography variant="caption" color="text.secondary">
-                    Completed
-                </Typography>
-            )}
-            {job.status === 'failed' && (
-                <Typography variant="caption" color="error">
-                    Failed
-                </Typography>
-            )}
+            {/* Fixed height for status line to prevent layout shift */}
+            <Box component="div" sx={{ minHeight: 18 }}>
+                {remaining !== null && job.status === 'running' && (
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                        ~{formatDuration(remaining)} left
+                    </Typography>
+                )}
+                {job.status === 'finished' && job.startedAt && job.finishedAt && (
+                    <Tooltip title={initialEstimate ? `Initial estimate: ~${formatDuration(initialEstimate)}` : ''}>
+                        <Typography variant="caption" color={accuracyLabel ? 'success.main' : 'text.secondary'}>
+                            {accuracyLabel ?? 'Completed'}
+                        </Typography>
+                    </Tooltip>
+                )}
+                {job.status === 'failed' && (
+                    <Typography variant="caption" color="error">
+                        Failed
+                    </Typography>
+                )}
+            </Box>
         </Box>
     );
 };
@@ -271,7 +309,7 @@ const JobProgressCell = ({ job }: { job: Job }) => {
                         flex: 1,
                         height: 6,
                         borderRadius: 3,
-                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        backgroundColor: 'action.hover',
                         '& .MuiLinearProgress-bar': {
                             borderRadius: 3,
                             transition: 'transform 0.8s ease',
@@ -285,21 +323,24 @@ const JobProgressCell = ({ job }: { job: Job }) => {
                     {Math.round(job.progress)}%
                 </Typography>
             </Box>
-            {job.status === 'running' && (
-                <Typography
-                    variant="caption"
-                    sx={{
-                        mt: 0.5,
-                        display: 'block',
-                        color: phase.color,
-                        fontFamily: '"IBM Plex Mono", monospace',
-                        fontSize: '0.6875rem',
-                        animation: isSegmenting ? `${pulse} 2s ease-in-out infinite` : 'none',
-                    }}
-                >
-                    {phase.label}...
-                </Typography>
-            )}
+            {/* Fixed height container to prevent layout shift when phase changes */}
+            <Box component="div" sx={{ minHeight: 18 }}>
+                {job.status === 'running' && (
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            mt: 0.5,
+                            display: 'block',
+                            color: phase.color,
+                            fontFamily: '"IBM Plex Mono", monospace',
+                            fontSize: '0.6875rem',
+                            animation: isSegmenting ? `${pulse} 2s ease-in-out infinite` : 'none',
+                        }}
+                    >
+                        {phase.label}...
+                    </Typography>
+                )}
+            </Box>
         </Box>
     );
 };
@@ -398,7 +439,13 @@ const RunsPage = () => {
                       <JobProgressCell job={row} />
                     </TableCell>
                     <TableCell>
-                      <JobDurationCell job={row} />
+                      <JobDurationCell
+                        job={row}
+                        videoInfo={(() => {
+                          const video = videos.find(v => v.id === row.videoId);
+                          return video?.videoInfo ? { frameCount: video.videoInfo.frameCount, fps: video.videoInfo.fps } : null;
+                        })()}
+                      />
                     </TableCell>
                     <TableCell>
                       <IconButton color={'primary'} size="small" onClick={() => setJobToDelete(row.id)}>

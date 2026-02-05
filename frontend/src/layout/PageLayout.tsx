@@ -16,7 +16,7 @@ const styles = {
         width: '100%',
         height: '100%',
         boxSizing: 'border-box',
-        backgroundColor: '#f4f4f4',
+        backgroundColor: 'background.default',
         '&.left-padding': {
             paddingLeft: '288px',
             [theme.breakpoints.up('sm')]: {

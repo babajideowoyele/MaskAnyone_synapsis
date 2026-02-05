@@ -5,8 +5,7 @@ import App from "./App";
 import {BrowserRouter} from "react-router-dom";
 import {Provider} from "react-redux";
 import {store} from "./state/store";
-import {ThemeProvider} from "@mui/material";
-import {theme} from "./mui/theme";
+import {ThemeContextProvider} from "./mui/ThemeContext";
 import Notifier from "./components/common/Notifier";
 
 import './index.css'
@@ -21,12 +20,12 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 
 root.render(
     <Provider store={store}>
-        <ThemeProvider theme={theme}>
+        <ThemeContextProvider>
             <BrowserRouter>
                 <App />
             </BrowserRouter>
             <Notifier />
-        </ThemeProvider>
+        </ThemeContextProvider>
     </Provider>
 );
 

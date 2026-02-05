@@ -70,3 +70,9 @@ class TrimVideoParams(BaseModel):
 
 class RenameVideoParams(BaseModel):
     name: str
+
+
+class ConvertFpsParams(BaseModel):
+    new_video_id: str
+    new_video_name: str
+    target_fps: int

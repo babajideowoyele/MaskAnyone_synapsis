@@ -34,6 +34,20 @@ class FFmpegConverter:
         ]
         self.run_command(command)
 
+    def convert_fps(self, input_path: str, output_path: str, target_fps: int):
+        """Convert video to target frame rate with re-encoding."""
+        command = [
+            self.ffmpeg_path, "-y",
+            "-i", input_path,
+            "-r", str(target_fps),
+            "-c:v", "libx264",
+            "-crf", str(self.crf),
+            "-preset", self.preset,
+            "-c:a", "copy",
+            output_path
+        ]
+        self.run_command(command)
+
     def convert_video_with_audio_in_place(self, input_video: str, audio_video: str):
         temp_output = f"{input_video}.temp.mp4"
         command = [
