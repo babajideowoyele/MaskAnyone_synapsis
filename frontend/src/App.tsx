@@ -20,6 +20,7 @@ import Selector from "./state/selector";
 import LandingPageLayout from "./layout/LandingPageLayout";
 import Api from "./api";
 import VideoMaskingEditorPage from "./pages/VideosMaskingEditorPage";
+import TutorialPage from "./pages/TutorialPage";
 
 interface ParsedToken {
     sub?: string;
@@ -100,6 +101,7 @@ const App = () => {
             <Routes>
                 <Route path={'/'} element={<LandingPageLayout />}>
                     <Route path={Paths.about} element={<AboutPage />} />
+                    <Route path={Paths.tutorial} element={<TutorialPage />} />
                     <Route index={true} element={<LandingPage />} />
                 </Route>
             </Routes>
@@ -121,6 +123,7 @@ const App = () => {
                     <Route path={Paths.presets} element={<PresetsPage />} />
                     <Route path={Paths.workers} element={<WorkersPage />} />
                     <Route path={Paths.about} element={<AboutPage />} />
+                    <Route path={Paths.tutorial} element={<TutorialPage />} />
                     <Route index={true} element={<Navigate to={Paths.videos} replace={true} />} />
                 </Route>
             </Routes>
