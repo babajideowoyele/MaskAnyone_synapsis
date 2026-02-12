@@ -71,6 +71,7 @@ const App = () => {
                     message: 'Could not establish communication with the backend.',
                 }));
             });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -84,6 +85,7 @@ const App = () => {
             dispatch(Command.Worker.fetchWorkerList({}));
             dispatch(Command.Preset.fetchPresetList({}));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authProviderInitialized, user]);
 
     if (!authProviderInitialized) {

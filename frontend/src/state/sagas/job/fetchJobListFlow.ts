@@ -1,4 +1,4 @@
-import { call, fork, put, take, delay, select } from 'redux-saga/effects';
+import { call, fork, put, take, delay } from 'redux-saga/effects';
 import { Action } from 'redux-actions';
 import Command from "../../actions/command";
 import Api from "../../../api";

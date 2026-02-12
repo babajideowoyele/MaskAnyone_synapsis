@@ -14,6 +14,7 @@ const WorkersPage = () => {
 
     useEffect(() => {
         dispatch(Command.Worker.fetchWorkerList({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

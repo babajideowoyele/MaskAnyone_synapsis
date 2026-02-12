@@ -22,12 +22,14 @@ const VideosPage = () => {
         if (videoId) {
             dispatch(Command.Video.fetchResultsList({ videoId }));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoId, openAndRunningJobCount]);
 
     useEffect(() => {
         if (videoId && resultVideoId) {
             dispatch(Command.Video.fetchDownloadableResultFiles({ videoId, resultVideoId }));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoId, resultVideoId]);
 
     if (!videoId && videoList.length > 0) {

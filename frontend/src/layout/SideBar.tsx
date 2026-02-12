@@ -63,9 +63,9 @@ const SideBar = (props: SideBarProps) => {
     const selectOrUnselectVideo = (videoId: string) => {
         console.log(videoId, selectedVideos)
         if (selectedVideos.includes(videoId)) {
-            const filteredVideos = selectedVideos.filter((val) => val != videoId)
+            const filteredVideos = selectedVideos.filter((val) => val !== videoId)
             setSelectedVideos(filteredVideos)
-            if (filteredVideos.length == 0) {
+            if (filteredVideos.length === 0) {
                 setAnyChecked(false)
             }
         } else {
@@ -79,7 +79,7 @@ const SideBar = (props: SideBarProps) => {
     }
 
     const handleSelectAll = () => {
-        if (selectedVideos.length == videoList.length) {
+        if (selectedVideos.length === videoList.length) {
             setSelectedVideos([])
         } else {
             setSelectedVideos(videoList.map((video) => video.id))

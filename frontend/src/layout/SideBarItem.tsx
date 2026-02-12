@@ -118,6 +118,7 @@ const SideBarItem = (props: SideBarItemProps) => {
                             <img
                                 style={{ width: '64px', objectFit: 'cover', marginRight: '8px', borderRadius: '4px' }}
                                 src={Config.api.baseUrl + '/videos/' + props.videoId + '/preview?token=' + KeycloakAuth.getToken()}
+                                alt={props.title}
                             />
                         </Badge>
 

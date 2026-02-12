@@ -57,7 +57,7 @@ const LandingPageLayout = () => {
             <AppBar position={'fixed'} sx={{...styles.appBar, backgroundColor: '#161616'}}>
                 <Toolbar sx={styles.toolbar}>
                     <Button component={Link} to={'/'} sx={{ color: 'white', marginLeft: '-16px' }}>
-                        <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} />
+                        <img src={Assets.logos.logoWhite} height={50} style={{ pointerEvents: 'none' }} alt="MaskAnyone" />
                     </Button>
 
                     <Box component="div" sx={styles.navigationContainer}>

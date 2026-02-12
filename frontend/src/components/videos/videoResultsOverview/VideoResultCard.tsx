@@ -3,7 +3,6 @@ import Config from "../../../config";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ResultVideo } from "../../../state/types/ResultVideo";
 import React from "react";
-import file from "../../../assets/previews/file.png";
 import KeycloakAuth from "../../../keycloakAuth";
 
 interface VideoResultCardProps {

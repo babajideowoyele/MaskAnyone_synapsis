@@ -1,6 +1,6 @@
 import React, {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useParams} from "react-router";
-import {Box, Button, Divider, IconButton, InputLabel, MenuItem, Select, Slider, TextField} from "@mui/material";
+import {Box, Button, Divider, IconButton, MenuItem, Select, Slider} from "@mui/material";
 import {useDispatch, useSelector} from "react-redux";
 import Selector from "../state/selector";
 import Api from "../api";
@@ -61,6 +61,7 @@ const VideoMaskingEditorPage = () => {
                 setHidingStrategies(posePrompts.map((_: any) => 'solid_fill'));
             });
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videoId, resultVideoId, Boolean(resultVideoJob)]);
 
     useEffect(() => {
@@ -76,6 +77,7 @@ const VideoMaskingEditorPage = () => {
                 });
             };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [imgRef.current]);
 
     const targetCount = useMemo(() => {
@@ -88,6 +90,7 @@ const VideoMaskingEditorPage = () => {
         return Math.max(posePromptsTargets, videoPosePromptsTargets);
     }, [posePrompts, videoPosePrompts]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSetCurrentFrame = useCallback(
         debounce((frame) => {
             setDebouncedCurrentFrame(frame);

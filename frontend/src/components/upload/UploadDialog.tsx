@@ -73,6 +73,7 @@ const UploadDialog = (props: UploadDialogProps) => {
         if (currentUploadCount < 1) {
             props.onClose();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUploadCount < previousUploadCount]);
 
     useEffect(() => {

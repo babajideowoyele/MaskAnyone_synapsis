@@ -1,4 +1,4 @@
-import {Box, Button, Card, CardContent, keyframes, Paper, Typography} from "@mui/material";
+import {Box, Button, keyframes, Paper, Typography} from "@mui/material";
 import {Link} from "react-router-dom";
 import Paths from "../paths";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";

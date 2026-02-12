@@ -52,6 +52,7 @@ const VideoTrimDialog = (props: VideoTrimDialogProps) => {
         if (trimStatus === 'done' && props.open) {
             props.onClose();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [trimStatus, props.open, props.onClose]);
 
     const handleRangeChange = (_event: Event, newValue: number | number[]) => {
