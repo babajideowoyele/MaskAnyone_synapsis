@@ -31,7 +31,7 @@ async def mask_video(
 
         valid_hiding_strategies = ['solid_fill', 'transparent_fill', 'blurring', 'pixelation', 'contours', 'none']
         valid_overlay_strategies = ['mp_hand', 'mp_face', 'mp_pose', 'none', 'openpose', 'openpose_body25b',
-                                 'openpose_face', 'openpose_body_135']
+                                 'openpose_face', 'openpose_body_135', 'mesh3d']
 
         if hiding_strategy not in valid_hiding_strategies:
             raise ValueError(f"Invalid hiding_strategy: {hiding_strategy}. Must be one of {valid_hiding_strategies}")

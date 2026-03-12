@@ -8,6 +8,7 @@ import time
 from typing import Callable
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
+from communication.mesh3d_client import Mesh3dClient
 from masking.mask_renderer import MaskRenderer
 from masking.pose_renderer import PoseRenderer
 from masking.media_pipe_landmarker import MediaPipeLandmarker
@@ -20,6 +21,7 @@ APPLY_CLAHE = False
 class Sam2PoseMasker:
     _sam2_client: Sam2Client
     _openpose_client: OpenposeClient
+    _mesh3d_client: Mesh3dClient | None
     _input_path: str
     _output_path: str
     _sam2_masks_path: str
@@ -36,10 +38,12 @@ class Sam2PoseMasker:
             output_path: str,
             sam2_masks_path: str,
             poses_path: str,
-            progress_callback: Callable[[int], None]
+            progress_callback: Callable[[int], None],
+            mesh3d_client: Mesh3dClient | None = None,
     ):
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
+        self._mesh3d_client = mesh3d_client
         self._input_path = input_path
         self._output_path = output_path
         self._sam2_masks_path = sam2_masks_path
@@ -420,6 +424,8 @@ class Sam2PoseMasker:
                     data = self._compute_mp_hand_data(sub_video_path)
                 elif video_masking_data['overlayStrategies'][obj_id - 1].startswith('openpose'):
                     data = self._compute_openpose_pose_data(video_masking_data['overlayStrategies'][obj_id - 1], content)
+                elif video_masking_data['overlayStrategies'][obj_id - 1] == 'mesh3d':
+                    data = self._compute_mesh3d_data(sub_video_path, start_frame, frame_count)
                 else:
                     raise Exception(f'Unknown overlay strategy, got {video_masking_data["overlayStrategies"][obj_id - 1]}')
 
@@ -451,6 +457,48 @@ class Sam2PoseMasker:
 
     def _compute_mp_hand_data(self, sub_video_path):
         return self._media_pipe_landmarker.compute_hand_data(sub_video_path)
+
+    def _compute_mesh3d_data(self, sub_video_path, start_frame, frame_count):
+        """Compute 3D mesh by first running MediaPipe, then ANNY fitting."""
+        # Step 1: Get 2D keypoints from MediaPipe
+        mp_data = self._compute_mp_pose_data(sub_video_path)
+
+        # Step 2: Convert MediaPipe landmarks to serializable format
+        # MediaPipe returns list of landmark lists (33 landmarks per frame)
+        keypoints_for_mesh3d = []
+        for frame_landmarks in mp_data:
+            if frame_landmarks is None:
+                keypoints_for_mesh3d.append(None)
+                continue
+            frame_kps = []
+            for lm in frame_landmarks:
+                if lm is None:
+                    frame_kps.append(None)
+                else:
+                    # MediaPipe landmarks are (x, y) or (x, y, z, visibility)
+                    x, y = float(lm[0]), float(lm[1])
+                    conf = float(lm[3]) if len(lm) > 3 else 1.0
+                    frame_kps.append([x, y, conf])
+            keypoints_for_mesh3d.append(frame_kps)
+
+        # Step 3: Get video dimensions for projection
+        video_capture = cv2.VideoCapture(sub_video_path)
+        frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        video_capture.release()
+
+        # Step 4: Send to mesh3d service
+        options = {
+            'pose_format': 'mp_pose',
+            'frame_width': frame_width,
+            'frame_height': frame_height,
+        }
+        mesh_data = self._mesh3d_client.fit_mesh(
+            json.dumps(keypoints_for_mesh3d),
+            options,
+        )
+
+        return mesh_data
 
     def _read_sub_video(self, sub_video_path):
         basename = os.path.basename(sub_video_path)

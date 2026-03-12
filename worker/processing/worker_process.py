@@ -7,6 +7,7 @@ import traceback
 from communication.backend_client import BackendClient
 from communication.sam2_client import Sam2Client
 from communication.openpose_client import OpenposeClient
+from communication.mesh3d_client import Mesh3dClient
 from communication.video_manager import VideoManager
 from masking.media_pipe_pose_masker import MediaPipePoseMasker
 from masking.sam2_pose_masker import Sam2PoseMasker
@@ -18,6 +19,7 @@ class WorkerProcess:
     _backend_client: BackendClient
     _sam2_client: Sam2Client
     _openpose_client: OpenposeClient
+    _mesh3d_client: Mesh3dClient | None
     _video_manager: VideoManager
     _last_api_call_time: int
 
@@ -27,10 +29,12 @@ class WorkerProcess:
             sam2_client: Sam2Client,
             openpose_client: OpenposeClient,
             video_manager: VideoManager,
+            mesh3d_client: Mesh3dClient | None = None,
     ):
         self._backend_client = backend_client
         self._sam2_client = sam2_client
         self._openpose_client = openpose_client
+        self._mesh3d_client = mesh3d_client
         self._video_manager = video_manager
 
     def run(self):
@@ -117,7 +121,8 @@ class WorkerProcess:
             self._video_manager.get_output_video_path(job["video_id"]),
             self._video_manager.get_result_data_path(job["video_id"], 'sam2_masks'),
             self._video_manager.get_result_data_path(job["video_id"], 'poses'),
-            progress_callback
+            progress_callback,
+            mesh3d_client=self._mesh3d_client,
         )
 
         sam2_pose_masker.mask(job['data']['videoMasking'])

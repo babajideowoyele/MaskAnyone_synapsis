@@ -200,7 +200,7 @@ def parse_arguments():
                         required=True,
                         nargs='+',
                         choices=['mp_hand', 'mp_face', 'mp_pose', 'none', 'openpose', 'openpose_body25b',
-                                 'openpose_face', 'openpose_body_135'],
+                                 'openpose_face', 'openpose_body_135', 'mesh3d'],
                         help="List of overlay strategies to be applied to the video (space-separated).")
 
     return parser.parse_args()

@@ -82,6 +82,14 @@ class PosePostprocessor:
                     obj_id,
                     pose_data
                 )
+            elif overlay_strategy == 'mesh3d':
+                self._postprocess_mesh3d(
+                    pose_data_dict,
+                    frame_count,
+                    estimation_input_bounding_boxes,
+                    obj_id,
+                    pose_data
+                )
             elif overlay_strategy == 'mask_anyone_holistic':
                 self._postprocess_mask_anyone_holistic(
                     pose_data_dict,
@@ -238,3 +246,30 @@ class PosePostprocessor:
                     adjusted_hand.append(None)
 
             pose_data_dict[obj_id][idx] = adjusted_hand
+
+    def _postprocess_mesh3d(self, pose_data_dict, frame_count, estimation_input_bounding_boxes, obj_id, pose_data):
+        """Translate mesh3d projected vertices from crop coordinates to full-frame coordinates."""
+        for idx in range(frame_count):
+            current_mesh = pose_data[idx]
+            if current_mesh is None:
+                continue
+
+            bbox_start_frames = [frame for frame in estimation_input_bounding_boxes[obj_id].keys() if frame <= idx]
+            if len(bbox_start_frames) < 1:
+                pose_data_dict[obj_id][idx] = None
+                continue
+
+            relevant_start_frame = max(bbox_start_frames)
+            bbox = estimation_input_bounding_boxes[obj_id][relevant_start_frame]
+            xmin, ymin, xmax, ymax = bbox
+
+            # Translate all projected 2D vertices from crop to full-frame coords
+            adjusted_vertices = []
+            for vertex in current_mesh['vertices_2d']:
+                adjusted_vertices.append([vertex[0] + xmin, vertex[1] + ymin])
+
+            pose_data_dict[obj_id][idx] = {
+                'vertices_2d': adjusted_vertices,
+                'faces': current_mesh['faces'],
+                'params': current_mesh.get('params', {}),
+            }

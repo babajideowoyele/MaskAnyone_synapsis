@@ -118,3 +118,20 @@ services:
     #   - /dev/nvidiactl:/dev/nvidiactl
     #   - /dev/nvidia-uvm:/dev/nvidia-uvm
     #   - /dev/nvidia-uvm-tools:/dev/nvidia-uvm-tools
+
+  mesh3d:
+    build:
+      context: ./docker/mesh3d
+    command: "uvicorn main:app --reload --proxy-headers --host 0.0.0.0 --root-path /api/"
+    env_file:
+      - ./app.env
+    volumes:
+      - ./mesh3d:/app
+    restart: on-failure
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MASKANYONE_GPU_ID:-0}"]
+              capabilities: [ gpu ]

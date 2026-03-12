@@ -132,6 +132,8 @@ class PoseRenderer:
             self._render_mp_face_overlay(rgb_image, keypoint_data)
         elif self._type == 'mp_pose':
             self._render_mp_pose_overlay(rgb_image, keypoint_data)
+        elif self._type == 'mesh3d':
+            self._render_mesh3d_overlay(rgb_image, keypoint_data)
         elif self._type.startswith('openpose'):
             self._render_openpose_overlay(self._type, rgb_image, keypoint_data)
 
@@ -330,4 +332,36 @@ class PoseRenderer:
                 pointA = tuple(map(int, right_hand_keypoints[partA]))
                 pointB = tuple(map(int, right_hand_keypoints[partB]))
                 cv2.line(rgb_image, pointA, pointB, (0, 0, 255), 2)
+
+    def _render_mesh3d_overlay(self, rgb_image, mesh_data):
+        """Render ANNY 3D mesh as wireframe overlay using projected 2D vertices."""
+        if mesh_data is None or 'vertices_2d' not in mesh_data:
+            return
+
+        vertices = mesh_data['vertices_2d']
+        faces = mesh_data['faces']
+        h, w = rgb_image.shape[:2]
+
+        # Draw mesh wireframe — subsample faces for performance
+        # Full ANNY mesh has ~27K triangles; draw every 4th for ~7K edges
+        step = max(1, len(faces) // 7000)
+        color = (0, 200, 255)  # Orange in RGB
+
+        for i in range(0, len(faces), step):
+            face = faces[i]
+            pts = []
+            skip = False
+            for vi in face:
+                x, y = int(vertices[vi][0]), int(vertices[vi][1])
+                if x < 0 or y < 0 or x >= w or y >= h:
+                    skip = True
+                    break
+                pts.append((x, y))
+
+            if skip or len(pts) < 3:
+                continue
+
+            cv2.line(rgb_image, pts[0], pts[1], color, 1)
+            cv2.line(rgb_image, pts[1], pts[2], color, 1)
+            cv2.line(rgb_image, pts[2], pts[0], color, 1)
 
