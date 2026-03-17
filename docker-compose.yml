@@ -36,10 +36,10 @@ services:
       - "5433:443"
     environment:
       PGADMIN_ENABLE_TLS: "True"
-      PGADMIN_DEFAULT_EMAIL: "dev@dev.dev"
-      PGADMIN_DEFAULT_PASSWORD: "dev"
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    env_file:
+      - ./app.env
     depends_on:
       - postgres
 
@@ -53,9 +53,8 @@ services:
   keycloak:
     build:
       context: ./docker/keycloak
-    environment:
-      KEYCLOAK_ADMIN: dev
-      KEYCLOAK_ADMIN_PASSWORD: dev
+    env_file:
+      - ./app.env
     command: "start-dev"
     ports:
       - "8080:8080"

@@ -16,11 +16,9 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:23.0.6
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
-# change these values to point to a running postgres instance
+# Database connection — credentials injected via env_file in docker-compose
 ENV KC_DB=postgres
 ENV KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
-ENV KC_DB_USERNAME=dev
-ENV KC_DB_PASSWORD=dev
 ENV KC_HTTP_RELATIVE_PATH=/auth/
 ENV KC_PROXY=edge
 
