@@ -13,6 +13,7 @@ from db.result_mp_kinematics_manager import ResultMpKinematicsManager
 from db.video_manager import VideoManager
 from db.result_video_manager import ResultVideoManager
 from auth.jwt_bearer import JWTBearer
+from audit import log_data_access
 from config import RESULT_BASE_PATH
 from utils.path_validation import validate_resource_id
 
@@ -38,6 +39,7 @@ def delete_result(result_video_id: str, token_payload: dict = Depends(JWTBearer(
     result_video = result_video_manager.get_result_video(result_video_id)
     video_manager.assert_user_has_video(result_video.video_id, user_id)
 
+    log_data_access(user_id, "delete", "result_video", result_video_id)
     result_video_manager.delete_result_video(result_video_id)
 
     result_video_path = os.path.join(RESULT_BASE_PATH, result_video.video_id, f"{result_video_id}.mp4")

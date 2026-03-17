@@ -4,6 +4,7 @@ from models import RunParams
 from db.job_manager import JobManager
 from db.db_connection import DBConnection
 from auth.jwt_bearer import JWTBearer
+from audit import log_data_access
 
 job_manager = JobManager(DBConnection())
 
@@ -30,6 +31,7 @@ def delete_job(job_id, token_payload: dict = Depends(JWTBearer())):
     if job.user_id != user_id:
         raise Exception(f'Job {job_id} does not belong to user {user_id}')
 
+    log_data_access(user_id, "delete", "job", job_id)
     job_manager.delete_job(job_id)
 
 
@@ -37,6 +39,7 @@ def delete_job(job_id, token_payload: dict = Depends(JWTBearer())):
 def create_job(run_params: RunParams, token_payload: dict = Depends(JWTBearer())):
     user_id = token_payload["sub"]
 
+    log_data_access(user_id, "create", "job", run_params.id)
     job_manager.create_new_jobs(
         run_params.id,
         run_params.video_ids,

@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import Request, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt
 
 from config import AUTH_TOKEN_ISSUER, AUTH_TOKEN_AUDIENCE, AUTH_ALGORITHM, AUTH_PUBLIC_KEY, MASK_ANYONE_PLATFORM_MODE
+
+logger = logging.getLogger(__name__)
 
 
 class JWTBearer(HTTPBearer):
@@ -46,5 +50,5 @@ class JWTBearer(HTTPBearer):
             )
             return payload
         except jwt.JWTError as ex:
-            print(ex)
+            logger.warning("JWT validation failed: %s", ex)
             raise HTTPException(status_code=403, detail="Invalid token or expired token.")

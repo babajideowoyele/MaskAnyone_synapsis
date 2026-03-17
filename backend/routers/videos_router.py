@@ -31,6 +31,7 @@ from db.result_audio_files_manager import ResultAudioFilesManager
 from db.result_extra_files_manager import ResultExtraFilesManager
 from db.db_connection import DBConnection
 from auth.jwt_bearer import JWTBearer
+from audit import log_data_access
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,8 @@ def get_video_stream(video_id: str, request: Request, token_payload: dict = Depe
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
 
+    log_data_access(user_id, "stream", "video", video_id)
+
     video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
 
     return range_requests_response(
@@ -75,6 +78,8 @@ def download_video(video_id: str, token_payload: dict = Depends(JWTBearer())):
     validate_resource_id(video_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+
+    log_data_access(user_id, "download", "video", video_id)
 
     video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
     return FileResponse(path=video_path, filename=f"{video_id}.mp4", media_type="video/mp4")
@@ -182,6 +187,8 @@ async def upload_video(video_id: str, request: Request, token_payload: dict = De
 
     video_path = os.path.join(VIDEOS_BASE_PATH, f"{video_id}.mp4")
 
+    log_data_access(user_id, "upload", "video", video_id)
+
     video_content = await request.body()
     with open(video_path, "wb") as f:
         f.write(video_content)
@@ -192,6 +199,8 @@ async def delete_video(video_id: str, request: Request, token_payload: dict = De
     validate_resource_id(video_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+
+    log_data_access(user_id, "delete", "video", video_id)
 
     video_manager.delete_video(video_id)
 
@@ -337,6 +346,7 @@ def get_result_video_stream(video_id: str, result_video_id: str, request: Reques
     validate_resource_id(result_video_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "stream", "result_video", result_video_id)
 
     video_path = os.path.join(RESULT_BASE_PATH, video_id, f"{result_video_id}.mp4")
 
@@ -354,6 +364,7 @@ def download_result_video(video_id: str, result_video_id: str, token_payload: di
     validate_resource_id(result_video_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "download", "result_video", result_video_id)
 
     video_path = os.path.join(RESULT_BASE_PATH, video_id, f"{result_video_id}.mp4")
 
@@ -439,6 +450,7 @@ def download_mp_kinematics_json(video_id: str, result_video_id: str, mp_kinemati
     validate_resource_id(mp_kinematics_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "download", "mp_kinematics", mp_kinematics_id)
 
     file_name = f"{result_video_id}_mp-kinematics.json"
 
@@ -516,6 +528,7 @@ def download_blendshapes(video_id: str, result_video_id: str, blendshapes_id: st
     validate_resource_id(blendshapes_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "download", "blendshapes", blendshapes_id)
 
     file_name = f"{result_video_id}_blendshapes.json"
 
@@ -534,6 +547,7 @@ def download_audio_file(video_id: str, result_video_id: str, audio_file_id: str,
     validate_resource_id(audio_file_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "download", "audio_file", audio_file_id)
 
     file_name = f"{result_video_id}_masked_voice.mp3"
 
@@ -554,6 +568,7 @@ def download_extra_file(video_id: str, result_video_id: str, extra_file_id: str,
     validate_resource_id(extra_file_id)
     user_id = token_payload["sub"]
     video_manager.assert_user_has_video(video_id, user_id)
+    log_data_access(user_id, "download", "extra_file", extra_file_id)
 
     result_extra_file = result_extra_files_manager.fetch_result_extra_files_entry(
         extra_file_id
