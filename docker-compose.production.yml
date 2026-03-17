@@ -1,0 +1,32 @@
+# Production overrides for MaskAnyone.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.production.yml up -d
+#
+# Changes from development defaults:
+#   - pgAdmin excluded (dev-only profile)
+#   - Keycloak admin UI not directly exposed (port removed)
+#   - Keycloak runs in production mode (not start-dev)
+#   - Auto-reload disabled on all uvicorn services
+#   - Source code volumes removed (use built images)
+
+services:
+  pgadmin:
+    profiles:
+      - dev-only
+
+  keycloak:
+    command: "start --hostname-strict=false --proxy=edge"
+    ports: !reset []
+
+  python:
+    command: "uvicorn main:app --proxy-headers --host 0.0.0.0 --root-path /api/"
+
+  sam2:
+    command: "uvicorn main:app --proxy-headers --host 0.0.0.0 --root-path /api/"
+
+  openpose:
+    command: "uvicorn main:app --proxy-headers --host 0.0.0.0 --root-path /api/"
+
+  mesh3d:
+    command: "uvicorn main:app --proxy-headers --host 0.0.0.0 --root-path /api/"
