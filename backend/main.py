@@ -9,10 +9,11 @@ import routers.presets_router as presets_router
 import routers.prompts_router as prompts_router
 import routers.platform_router as platform_router
 from auth.jwt_bearer import JWTBearer
+from auth.api_key_bearer import WorkerAPIKeyBearer
 
 app = FastAPI()
 
-# /platform
+# /platform — unauthenticated (non-sensitive system info)
 app.include_router(platform_router.router)
 
 # /videos
@@ -24,8 +25,8 @@ app.include_router(jobs_router.router, dependencies=[Depends(JWTBearer())])
 # /workers
 app.include_router(workers_router.router, dependencies=[Depends(JWTBearer())])
 
-# /_worker
-app.include_router(worker_router.router)
+# /_worker — authenticated via API key (internal service-to-service)
+app.include_router(worker_router.router, dependencies=[Depends(WorkerAPIKeyBearer())])
 
 # /results
 app.include_router(results_router.router, dependencies=[Depends(JWTBearer())])
