@@ -8,9 +8,16 @@
 #   - Keycloak admin UI not directly exposed (port removed)
 #   - Keycloak runs in production mode (not start-dev)
 #   - Auto-reload disabled on all uvicorn services
+#   - Nginx uses HTTP-only config (TLS terminated by external reverse proxy)
 #   - Source code volumes removed (use built images)
 
 services:
+  nginx:
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/conf/www-http.conf:/etc/nginx/conf.d/default.conf:ro
+
   pgadmin:
     profiles:
       - dev-only
