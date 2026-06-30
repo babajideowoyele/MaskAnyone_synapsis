@@ -16,6 +16,9 @@ RUN /opt/keycloak/bin/kc.sh build
 FROM quay.io/keycloak/keycloak:23.0.6
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 
+# SYNAPSIS brand login theme
+COPY themes/ /opt/keycloak/themes/
+
 # Database connection — credentials injected via env_file in docker-compose
 ENV KC_DB=postgres
 ENV KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak

@@ -1,4 +1,4 @@
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle} from '@mui/material';
+import {Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Typography} from '@mui/material';
 import UploadDropzone from './UploadDropzone';
 import {useEffect, useState} from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,6 +29,7 @@ const UploadDialog = (props: UploadDialogProps) => {
     const [stagedFiles, setStagedFiles] = useState<Array<{file: File, id: string}>>([]);
     const [tags, setTags] = useState<string[]>([]);
     const [uploadRunning, setUploadRunning] = useState<boolean>(false);
+    const [consentChecked, setConsentChecked] = useState<boolean>(false);
     const currentUploadCount = Object.keys(uploadProgress).length;
     const previousUploadCount = Object.keys(usePrevious(uploadProgress) || {}).length;
 
@@ -80,6 +81,7 @@ const UploadDialog = (props: UploadDialogProps) => {
         if (!props.open) {
             setStagedFiles([]);
             setUploadRunning(false);
+            setConsentChecked(false);
         }
     }, [props.open]);
 
@@ -97,6 +99,30 @@ const UploadDialog = (props: UploadDialogProps) => {
                     onSelectFiles={handleSelectedFiles}
                     onCancelFile={cancelStagedFile}
                 />
+                <Box component="div" sx={{ mt: 2 }}>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={consentChecked}
+                                onChange={(e) => setConsentChecked(e.target.checked)}
+                                disabled={uploadRunning}
+                            />
+                        }
+                        label={
+                            <Typography variant="body2">
+                                I confirm that everyone visible or audible in this recording has given explicit consent for computational de-identification — or that I am uploading a pre-supplied SYNAPSIS sample video.
+                            </Typography>
+                        }
+                    />
+                    <Alert severity="info" sx={{ mt: 1 }} icon={false}>
+                        <Typography variant="caption">
+                            Questions about privacy or data use? Contact CLS:{' '}
+                            <a href="mailto:babajide.owoyele@ru.nl">babajide.owoyele@ru.nl</a>
+                            {' '}or{' '}
+                            <a href="mailto:h.vanden.heuvel@ru.nl">h.vanden.heuvel@ru.nl</a>
+                        </Typography>
+                    </Alert>
+                </Box>
             </DialogContent>
             <DialogActions>
                 <Button color={'inherit'} onClick={closeDialog}>Cancel</Button>
@@ -106,6 +132,7 @@ const UploadDialog = (props: UploadDialogProps) => {
                     startIcon={<PublishIcon />}
                     children={'Upload'}
                     loading={uploadRunning}
+                    disabled={!consentChecked || stagedFiles.length < 1}
                 />
             </DialogActions>
         </Dialog>

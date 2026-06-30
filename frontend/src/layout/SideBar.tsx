@@ -1,4 +1,4 @@
-import {Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, IconButton, List, Tooltip, useTheme} from "@mui/material";
+import {Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Drawer, IconButton, List, Tooltip, Typography, useTheme} from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import Selector from "../state/selector";
 import UploadIcon from '@mui/icons-material/Upload';
@@ -172,6 +172,17 @@ const SideBar = (props: SideBarProps) => {
                         Upload
                     </Button>
                     <UploadDialog open={uploadDialogOpen} onClose={closeUploadDialog} />
+                    <Box component="div" sx={{ mt: 2, px: 1, pb: 1 }}>
+                        <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                            Privacy questions or data requests:
+                        </Typography>
+                        <Typography variant="caption" display="block">
+                            <a href="mailto:babajide.owoyele@ru.nl" style={{ color: 'inherit' }}>babajide.owoyele@ru.nl</a>
+                        </Typography>
+                        <Typography variant="caption" display="block">
+                            <a href="mailto:h.vanden.heuvel@ru.nl" style={{ color: 'inherit' }}>h.vanden.heuvel@ru.nl</a>
+                        </Typography>
+                    </Box>
                     <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
                         <DialogTitle>Delete Videos</DialogTitle>
                         <DialogContent>

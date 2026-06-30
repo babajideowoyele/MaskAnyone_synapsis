@@ -1,0 +1,105 @@
+/* MaskAnyone / SYNAPSIS — Keycloak login theme
+   Extends the default keycloak theme. Loaded last so all rules override.
+*/
+
+/* IBM Plex Sans — fonts.bunny.net (GDPR-compliant, no Google tracking) */
+@import url('https://fonts.bunny.net/css?family=ibm-plex-sans:300,400,500,600&display=swap');
+
+/* ── Background ─────────────────────────────────────────────────────── */
+
+body,
+body.login-pf,
+.login-pf-page {
+    background-image: none !important;
+    background-color: #f4f4f4 !important;
+    font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* ── Logo ────────────────────────────────────────────────────────────── */
+
+#kc-logo-wrapper {
+    background-image: url('../img/logo_black.svg') !important;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    height: 56px;
+    width: 220px;
+    margin: 0 auto 8px;
+}
+
+/* Hide the realm text "MaskAnyone (Synapsis)" — logo replaces it */
+#kc-page-title {
+    display: none !important;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+
+.card-pf,
+.login-pf-page .card-pf {
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ── Typography ──────────────────────────────────────────────────────── */
+
+body, label, input, button, select, textarea, a,
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+#kc-form-title {
+    font-weight: 300 !important;
+    letter-spacing: 0.02em;
+    color: #161616;
+}
+
+/* ── Primary button (Sign In) ────────────────────────────────────────── */
+
+.btn-primary {
+    background-color: #161616 !important;
+    background-image: none !important;
+    border-color: #161616 !important;
+    border-radius: 0 !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.04em;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: #393939 !important;
+    border-color: #393939 !important;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────── */
+
+.form-control {
+    border-radius: 0 !important;
+    border-color: #e0e0e0 !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+}
+
+.form-control:focus {
+    border-color: #161616 !important;
+    box-shadow: inset 0 0 0 1px #161616 !important;
+    outline: none !important;
+}
+
+/* ── Social login (CLARIAH / SURFconext) ─────────────────────────────── */
+
+#social-providers .zocial {
+    border-radius: 0 !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+}
+
+/* ── Links ───────────────────────────────────────────────────────────── */
+
+a {
+    color: #161616 !important;
+    text-decoration: underline;
+}
+
+a:hover {
+    color: #393939 !important;
+}
